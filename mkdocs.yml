@@ -1,0 +1,70 @@
+site_name: GitOps Fundamentals
+site_url: https://stevenwadeconsulting.github.io/gitops-fundamentals-lab
+repo_name: stevenwadeconsulting/gitops-fundamentals-lab
+repo_url: https://github.com/stevenwadeconsulting/gitops-fundamentals-lab
+edit_uri: ""
+site_dir: public
+
+# Page tree
+nav:
+  - Home: index.md
+  - Accessing Your Environment: access.md
+  - Labs:
+      - 1. Your First GitOps Pipeline: labs/1-first-pipeline.md
+      - 2. Multi-Environment Mastery: labs/2-multi-environment.md
+      - 3. Helm Integration: labs/3-helm-integration.md
+      - 4. Image Update Automation: labs/4-image-automation.md
+      - 5. Secret Management with SOPS: labs/5-sops-secrets.md
+      - 6. Monitoring & Troubleshooting: labs/6-monitoring-troubleshooting.md
+  - Resources:
+    - About Your Instructor: about-instructor.md
+    - Provide Feedback: https://forms.gle/HxoVhSZRNk49BweS9
+
+# Configuration
+theme:
+  language: en
+  features:
+    - tabs
+    - navigation.sections
+    - content.code.copy
+  name: material
+  icon:
+    logo: material/source-branch
+    repo: fontawesome/brands/github
+  font:
+    text: Ubuntu
+    code: Ubuntu Mono
+
+# Plugins
+plugins:
+  - search
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github-alt
+      link: https://github.com/swade1987
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/stevendavidwade/
+
+copyright: Copyright &copy; 2026 Steven Wade Consulting

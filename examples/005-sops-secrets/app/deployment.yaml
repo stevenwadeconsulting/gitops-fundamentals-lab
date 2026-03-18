@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sops-demo
+  namespace: sops-demo
+  labels:
+    app: sops-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sops-demo
+  template:
+    metadata:
+      labels:
+        app: sops-demo
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-credentials
+                  key: database-url
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-credentials
+                  key: api-key
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: broken-source
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/stevenwadeconsulting/this-repo-does-not-exist
+  ref:
+    branch: main
