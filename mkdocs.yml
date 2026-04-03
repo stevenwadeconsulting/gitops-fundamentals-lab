@@ -33,12 +33,13 @@ theme:
     - navigation.sections
     - navigation.top
     - navigation.tracking
+    - navigation.instant
     - content.code.copy
     - content.code.annotate
     - search.highlight
     - search.share
   icon:
-    logo: material/source-branch
+    logo: material/delete-outline
   font:
     text: Inter
     code: JetBrains Mono
