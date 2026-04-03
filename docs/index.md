@@ -1,122 +1,126 @@
-# 🚀 GitOps Fundamentals Workshop
+# GitOps Fundamentals with Flux
 
-Welcome to the GitOps Fundamentals Workshop! This hands-on workshop will transform how you think about deployment. You'll build a working GitOps pipeline on a real Kubernetes cluster, make changes through pull requests, watch automated reconciliation happen, and understand why this changes everything.
+From Manual Deployments to AI-Assisted Operations. A full-day hands-on workshop by Steve Wade.
 
-<div style="padding: 15px; margin: 20px 0; background-color: #e1f5fe; border-left: 5px solid #03a9f4; border-radius: 4px;">
-<h3 style="margin-top: 0; color: #0277bd;">👨‍🏫 Meet Your Instructor</h3>
-<p>This workshop is led by Steve Wade - an industry veteran who has rescued 50+ platforms, former Flux maintainer, and founder of the Cloud Native Club. He's been implementing Flux at scale since before it graduated.</p>
-<p><a href="about-instructor">Learn more about your instructor →</a></p>
-</div>
+You'll build a working GitOps pipeline on a real Kubernetes cluster, deploy through Git, watch automated reconciliation happen, and understand why this changes everything about how you ship software.
 
-## 🔍 Workshop Overview
+!!! tip "Your Instructor"
+    Steve Wade rescues failed Kubernetes migrations. 50+ platform audits. Over 100M in complexity prevented. Former Flux maintainer. Trained 6,000+ engineers, 400+ specifically on GitOps.
 
-This workshop is for engineers who are tired of deployments that require human intervention at every step. By the end of the day, you'll have a complete GitOps workflow you can adapt for your organisation, the confidence to deploy on Friday (yes, really), and a 30-day adoption roadmap for your team.
+    [More about Steve](about-instructor.md)
 
-### 📚 What You Will Learn
+## Workshop Overview
 
-- **🏗️ GitOps Principles**: The four principles that change everything about deployment
-- **🔄 Flux Architecture**: Source Controllers, Kustomize Controllers, Helm Controllers - demystified
-- **🌍 Multi-Environment Pipelines**: Repository structures and promotion workflows that scale
-- **⎈ Helm Integration**: Managing Helm charts the GitOps way
-- **🤖 Image Automation**: New versions flow automatically from registry to cluster
-- **🔐 Secret Management**: SOPS encryption so secrets never live in Slack again
-- **🔍 Observability**: Monitoring, troubleshooting, and rollback strategies from 50+ rescues
+This workshop is for engineers who are tired of deployments that require human intervention at every step. By the end of the day, you'll have:
 
-## 📅 Agenda
+- A complete GitOps workflow you can adapt for your organisation
+- The confidence to deploy on Friday (yes, really)
+- A readiness audit you can run with your team in 15 minutes
+- The answer to "but what about..." for every objection your colleagues will raise
+
+## What You Will Learn
+
+- **GitOps with Flux Operator**: Declarative cluster management with a single CRD
+- **Multi-Environment Pipelines**: Kustomize overlays for dev, staging, and production
+- **Helm Integration**: Managing Helm charts the GitOps way
+- **Secret Management**: SOPS encryption so secrets never live in Slack again
+- **Monitoring and Troubleshooting**: Patterns from 50+ platform rescues
+- **AI-Assisted GitOps**: Live demo of the Flux MCP Server for natural language debugging
+
+## Agenda
 
 | Time | Session |
 |------|---------|
-| 09:00 - 09:45 | **The Deployment Reality Check** - Why most CI/CD pipelines create more problems than they solve |
-| 09:45 - 11:00 | **Lab 1: Your First GitOps Pipeline** - Connect your cluster to Git, deploy through a PR |
+| 09:00 - 09:45 | **The Deployment Reality Check**: Why most CI/CD pipelines create more problems than they solve |
+| 09:45 - 11:00 | **Lab 1: Your First GitOps Pipeline**: Deploy through a pull request, watch reconciliation |
 | 11:00 - 11:20 | Break |
-| 11:20 - 12:40 | **Lab 2: Multi-Environment Mastery** - Kustomize overlays, promotion workflows |
+| 11:20 - 12:40 | **Lab 2: Multi-Environment Mastery**: Kustomize overlays, promotion workflows |
 | 12:40 - 13:20 | Lunch |
-| 13:20 - 14:00 | **Lab 3: Helm Integration** - Helm charts the GitOps way |
-| 14:00 - 14:20 | **Lab 4: Image Update Automation** - Hands-free deployments |
-| 14:20 - 14:40 | **Lab 5: Secret Management with SOPS** - No more secrets in Slack |
+| 13:20 - 14:00 | **Lab 3: Helm Integration**: Helm charts managed by Flux |
+| 14:00 - 14:40 | **Lab 4: Secret Management with SOPS**: Encrypted secrets in Git |
 | 14:40 - 15:00 | Break |
-| 15:00 - 15:45 | **Lab 6: When Things Go Wrong** - Monitoring, troubleshooting, rollbacks |
-| 15:45 - 16:15 | **Ask Me Anything** - Your challenges, your migration strategy |
+| 15:00 - 15:25 | **Lab 5: Monitoring and Troubleshooting**: Breaking things on purpose |
+| 15:25 - 15:45 | **Flux MCP Server Demo**: AI-assisted GitOps debugging |
+| 15:45 - 16:15 | **Ask Me Anything**: Your challenges, your migration strategy |
 
-## ✅ Prerequisites
+## Prerequisites
 
-- Working knowledge of Kubernetes (you know what Deployments, Services, and Namespaces are)
+- Working knowledge of Kubernetes (Deployments, Services, Namespaces)
 - Familiarity with Git (commits, branches, pull requests)
-- Comfort with YAML (you won't cry when you see a ConfigMap)
+- Comfort with YAML
 - If you can run `kubectl get pods` and push to a Git repository, you're ready
 
-## 💻 Lab Environment
+## Your Environment
 
-Each participant will have access to:
+Each participant gets:
 
-- A pre-configured Kubernetes cluster with Flux installed
-- A dedicated GitHub repository for GitOps workflows
-- All workshop materials and example manifests
+- A pre-configured Kubernetes cluster
+- A dedicated bastion node with all tools pre-installed (kubectl, Flux, Helm, SOPS, age)
+- A personal GitHub repository for your GitOps workflow
 
-No local Kubernetes installation required. No Docker Desktop. No fighting with minikube. You'll be deploying within 45 minutes of sitting down.
+No local Kubernetes installation. No Docker Desktop. No minikube. You'll be deploying within 45 minutes of sitting down.
 
-To access your environment, follow the instructions provided [here](access.md).
+[Access your environment](access.md){ .md-button .md-button--primary }
 
-## 🧪 Workshop Labs
+## Workshop Labs
 
-The workshop consists of six hands-on labs, each building on the previous:
+Five hands-on labs, each building on the previous:
 
-1. **[🔰 Your First GitOps Pipeline](labs/1-first-pipeline.md)** - Bootstrap Flux, deploy via pull request, watch reconciliation
-2. **[🌍 Multi-Environment Mastery](labs/2-multi-environment.md)** - Kustomize overlays for dev, staging, and production
-3. **[⎈ Helm Integration](labs/3-helm-integration.md)** - HelmRepository and HelmRelease resources
-4. **[🤖 Image Update Automation](labs/4-image-automation.md)** - Automatic deployments when new images are pushed
-5. **[🔐 Secret Management with SOPS](labs/5-sops-secrets.md)** - Encrypt secrets in Git with Mozilla SOPS
-6. **[🔍 Monitoring & Troubleshooting](labs/6-monitoring-troubleshooting.md)** - Observability, debugging, and rollback strategies
+1. **[Your First GitOps Pipeline](labs/1-first-pipeline.md)**: Bootstrap Flux, deploy via Git, watch reconciliation
+2. **[Multi-Environment Mastery](labs/2-multi-environment.md)**: Kustomize overlays for dev, staging, and production
+3. **[Helm Integration](labs/3-helm-integration.md)**: HelmRepository and HelmRelease resources
+4. **[Secret Management with SOPS](labs/4-sops-secrets.md)**: Encrypt secrets in Git
+5. **[Monitoring and Troubleshooting](labs/5-monitoring-troubleshooting.md)**: Observability, debugging, and rollbacks
 
-## 🔄 Workshop Flow
+Plus: **[Flux MCP Server Demo](labs/flux-mcp-demo.md)**: AI-assisted GitOps debugging with natural language.
 
-<div style="padding: 15px; margin: 20px 0; background-color: #e3f2fd; border-left: 5px solid #2196f3; border-radius: 4px;">
-<p>Each lab follows a consistent structure to enhance your learning:</p>
-<ol>
-  <li><strong>Objective</strong>: What you will learn in the lab</li>
-  <li><strong>Tasks</strong>: Step-by-step instructions with explanations</li>
-  <li><strong>Validation</strong>: How to verify your work</li>
-  <li><strong>Clean-up</strong>: Instructions to reset your environment after each exercise</li>
-</ol>
-<p><strong>Important</strong>: Please follow the clean-up instructions at the end of each lab to ensure your cluster resources remain available for later exercises.</p>
-</div>
+## Lab Structure
 
-## 📚 Additional Resources
+Each lab follows a consistent format:
 
-- [Flux Official Documentation](https://fluxcd.io/flux/)
-- [GitOps Principles](https://opengitops.dev/)
-- [Kustomize Documentation](https://kustomize.io/)
-- [Mozilla SOPS](https://github.com/getsops/sops)
-- [Kubernetes Official Documentation](https://kubernetes.io/docs/home/)
+1. **Objective**: What you will learn
+2. **Tasks**: Step-by-step instructions with explanations
+3. **Validation**: How to verify your work
+4. **Clean-up**: Reset your environment for the next lab
 
-## 🛠️ Troubleshooting
+!!! warning "Follow the clean-up steps"
+    Please follow the clean-up instructions at the end of each lab. This ensures your cluster is ready for the next exercise.
 
-If you encounter any issues during the labs:
+## Troubleshooting
 
-1. Check the Flux status:
-   ```bash
-   flux check
-   flux get all
-   ```
+If you hit an issue during the labs:
 
-2. Inspect Flux events:
-   ```bash
-   flux events
-   kubectl get events -n flux-system
-   ```
+```bash
+# What failed?
+flux get all
 
-3. Check resource reconciliation:
-   ```bash
-   flux get kustomizations
-   flux get sources git
-   ```
+# What's the error?
+kubectl describe kustomization <name> -n flux-system
 
-4. Ask for assistance from the workshop instructor
+# What happened?
+flux events --for kustomization/<name>
 
-## 💬 Feedback
+# Why?
+kubectl logs -n flux-system deploy/kustomize-controller
+```
 
-<div style="padding: 15px; margin: 20px 0; background-color: #fff8e1; border-left: 5px solid #ffc107; border-radius: 4px;">
-<h3 style="margin-top: 0; color: #ff8f00;">📝 Your Feedback Matters!</h3>
-<p>At the end of the workshop, please take a few minutes to share your thoughts by completing our <a href="https://forms.gle/HxoVhSZRNk49BweS9">feedback form</a>.</p>
-<p>Your input helps us improve future workshops and develop new content based on your needs and interests.</p>
-</div>
+If none of that helps, raise your hand.
+
+## Resources
+
+- [Flux Documentation](https://fluxcd.io/flux/){ target="_blank" }
+- [Flux Operator Documentation](https://fluxcd.controlplane.io/){ target="_blank" }
+- [OpenGitOps Principles](https://opengitops.dev/){ target="_blank" }
+- [Kustomize Documentation](https://kustomize.io/){ target="_blank" }
+- [Mozilla SOPS](https://github.com/getsops/sops){ target="_blank" }
+
+## After the Workshop
+
+- [The 10 Landmines Between Your GitOps Workshop and Production](https://guides.platformfix.com/gitops-10-landmines){ target="_blank" }: Free guide with the 25-question readiness audit
+- [Book a Platform Review](https://calendly.com/platformfixer/devops-pro){ target="_blank" }: 30 minutes. You describe your stack. I tell you what I'd delete first.
+- [The Deletion Digest](https://newsletter.platformfix.com){ target="_blank" }: Weekly newsletter. One idea, no fluff.
+
+## Feedback
+
+!!! note "Your feedback matters"
+    At the end of the workshop, please take a few minutes to share your thoughts via the [feedback form](https://forms.gle/HxoVhSZRNk49BweS9){ target="_blank" }.

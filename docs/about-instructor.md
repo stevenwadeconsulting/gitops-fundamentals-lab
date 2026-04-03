@@ -2,7 +2,7 @@
 
 I'm Steve Wade. I rescue failed Kubernetes migrations.
 
-50+ platform audits. Over £100M in complexity prevented. I'm the engineer organisations call when cloud-native promises become expensive nightmares.
+50+ platform audits. Over 100M in complexity prevented. I'm the engineer organisations call when cloud-native promises become expensive nightmares.
 
 I've been implementing Flux at scale since before it graduated from the CNCF. Former Flux maintainer. Trained 6,000+ engineers worldwide in cloud-native practices, 400+ specifically on GitOps.
 
@@ -16,6 +16,6 @@ This workshop is built from those patterns. Not theory. Not vendor marketing. Wh
 
 ## Connect
 
-- **LinkedIn**: [linkedin.com/in/stevendavidwade](https://www.linkedin.com/in/stevendavidwade/)
-- **Newsletter**: [The Deletion Digest](https://newsletter.platformfix.com) (weekly, no fluff)
-- **GitHub**: [github.com/swade1987](https://github.com/swade1987)
+- **LinkedIn**: [linkedin.com/in/stevendavidwade](https://www.linkedin.com/in/stevendavidwade/){ target="_blank" }
+- **Newsletter**: [The Deletion Digest](https://newsletter.platformfix.com){ target="_blank" } (weekly, no fluff)
+- **GitHub**: [github.com/swade1987](https://github.com/swade1987){ target="_blank" }
