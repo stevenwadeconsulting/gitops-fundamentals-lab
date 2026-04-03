@@ -89,3 +89,84 @@
 .md-typeset .task-list-indicator:before {
   background-color: #D4A843;
 }
+
+/* Admonition overrides for dark theme */
+[data-md-color-scheme="slate"] .md-typeset .admonition,
+[data-md-color-scheme="slate"] .md-typeset details {
+  background-color: #1F2937;
+  border-color: #374151;
+  color: #F0EFE8;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset summary {
+  background-color: rgba(55, 65, 81, 0.5);
+  color: #F0EFE8;
+}
+
+/* Specific admonition types */
+[data-md-color-scheme="slate"] .md-typeset .admonition.note,
+[data-md-color-scheme="slate"] .md-typeset details.note {
+  border-color: #D4A843;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .note > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .note > summary {
+  background-color: rgba(212, 168, 67, 0.1);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition.warning,
+[data-md-color-scheme="slate"] .md-typeset details.warning {
+  border-color: #D4A843;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .warning > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .warning > summary {
+  background-color: rgba(212, 168, 67, 0.1);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition.info,
+[data-md-color-scheme="slate"] .md-typeset details.info {
+  border-color: #374151;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .info > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .info > summary {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition.danger,
+[data-md-color-scheme="slate"] .md-typeset details.danger {
+  border-color: #EF4444;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .danger > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .danger > summary {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition.success,
+[data-md-color-scheme="slate"] .md-typeset details.success {
+  border-color: #22C55E;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .success > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .success > summary {
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* Inline HTML blocks (instructor card etc) */
+[data-md-color-scheme="slate"] .md-typeset div[style*="background-color"] {
+  background-color: #1F2937 !important;
+  border-color: #374151 !important;
+  color: #F0EFE8 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset div[style*="background-color"] h3 {
+  color: #D4A843 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset div[style*="background-color"] p,
+[data-md-color-scheme="slate"] .md-typeset div[style*="background-color"] li {
+  color: #B0B8C4 !important;
+}
