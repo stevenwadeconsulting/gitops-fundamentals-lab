@@ -1,7 +1,9 @@
-site_name: GitOps Fundamentals
+site_name: GitOps Fundamentals with Flux
 site_url: https://workshop.platformfix.com/gitops
-repo_name: stevenwadeconsulting/gitops-fundamentals-lab
-repo_url: https://github.com/stevenwadeconsulting/gitops-fundamentals-lab
+site_description: From Manual Deployments to AI-Assisted Operations
+site_author: Steve Wade
+repo_name: ""
+repo_url: ""
 edit_uri: ""
 site_dir: public
 
@@ -13,27 +15,50 @@ nav:
       - 1. Your First GitOps Pipeline: labs/1-first-pipeline.md
       - 2. Multi-Environment Mastery: labs/2-multi-environment.md
       - 3. Helm Integration: labs/3-helm-integration.md
-      - 4. Image Update Automation: labs/4-image-automation.md
-      - 5. Secret Management with SOPS: labs/5-sops-secrets.md
-      - 6. Monitoring & Troubleshooting: labs/6-monitoring-troubleshooting.md
+      - 4. Secret Management with SOPS: labs/4-sops-secrets.md
+      - 5. Monitoring & Troubleshooting: labs/5-monitoring-troubleshooting.md
+  - Flux MCP Server Demo: labs/flux-mcp-demo.md
   - Resources:
-    - About Your Instructor: about-instructor.md
-    - Provide Feedback: https://forms.gle/HxoVhSZRNk49BweS9
+      - About Your Instructor: about-instructor.md
+      - Free Guide - 10 GitOps Landmines: https://guides.platformfix.com/gitops-10-landmines
+      - Book a Platform Review: https://calendly.com/platformfixer/devops-pro
+      - Provide Feedback: https://forms.gle/HxoVhSZRNk49BweS9
 
 # Configuration
 theme:
   language: en
-  features:
-    - tabs
-    - navigation.sections
-    - content.code.copy
   name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+    - search.share
   icon:
     logo: material/source-branch
-    repo: fontawesome/brands/github
   font:
-    text: Ubuntu
-    code: Ubuntu Mono
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+# Custom CSS
+extra_css:
+  - stylesheets/extra.css
 
 # Plugins
 plugins:
@@ -43,6 +68,7 @@ plugins:
 markdown_extensions:
   - admonition
   - attr_list
+  - md_in_html
   - pymdownx.details
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
@@ -56,15 +82,19 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
   - toc:
       permalink: true
 
 extra:
   generator: false
   social:
-    - icon: fontawesome/brands/github-alt
-      link: https://github.com/swade1987
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/in/stevendavidwade/
+    - icon: fontawesome/brands/github-alt
+      link: https://github.com/swade1987
+    - icon: fontawesome/solid/paper-plane
+      link: https://newsletter.platformfix.com
 
-copyright: Copyright &copy; 2026 Steven Wade Consulting
+copyright: "&copy; 2026 Platform Fix. Delete before you add."

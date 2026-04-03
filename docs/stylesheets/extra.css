@@ -1,0 +1,91 @@
+/* Platform Fix Brand System */
+
+/* Slate (dark) scheme overrides */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #D4A843;
+  --md-primary-bg-color: #0A0F1C;
+  --md-accent-fg-color: #D4A843;
+  --md-default-bg-color: #0A0F1C;
+  --md-default-fg-color: #F0EFE8;
+  --md-default-fg-color--light: #B0B8C4;
+  --md-code-bg-color: #1F2937;
+  --md-code-fg-color: #F0EFE8;
+  --md-typeset-a-color: #D4A843;
+  --md-footer-bg-color: #0A0F1C;
+  --md-footer-bg-color--dark: #070B14;
+}
+
+/* Default (light) scheme overrides */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #0A0F1C;
+  --md-primary-bg-color: #F0EFE8;
+  --md-accent-fg-color: #D4A843;
+}
+
+/* Header */
+.md-header {
+  background-color: #0A0F1C;
+  border-bottom: 2px solid #D4A843;
+}
+
+.md-header__title {
+  font-weight: 700;
+}
+
+/* Navigation tabs */
+.md-tabs {
+  background-color: #0A0F1C;
+}
+
+/* Admonition overrides for brand consistency */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  border-color: #D4A843;
+}
+
+.md-typeset .tip > .admonition-title,
+.md-typeset .tip > summary {
+  background-color: rgba(212, 168, 67, 0.1);
+}
+
+.md-typeset .tip > .admonition-title::before,
+.md-typeset .tip > summary::before {
+  background-color: #D4A843;
+}
+
+/* Code blocks */
+.md-typeset code {
+  border-radius: 4px;
+}
+
+.md-typeset pre > code {
+  border-radius: 8px;
+}
+
+/* Footer */
+.md-footer {
+  border-top: 1px solid #374151;
+}
+
+.md-copyright {
+  color: #9CA3AF;
+}
+
+/* Search */
+.md-search__input {
+  background-color: #1F2937;
+}
+
+/* Content links */
+.md-typeset a {
+  color: #D4A843;
+}
+
+.md-typeset a:hover {
+  color: #C49A3A;
+}
+
+/* Task list checkboxes */
+.md-typeset .task-list-indicator:before {
+  background-color: #D4A843;
+}
