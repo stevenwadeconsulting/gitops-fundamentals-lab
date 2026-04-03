@@ -45,6 +45,16 @@
 /* Navigation tabs */
 .md-tabs {
   background-color: #0A0F1C;
+  border-bottom: 1px solid #374151;
+}
+
+.md-tabs__link {
+  color: #B0B8C4 !important;
+}
+
+.md-tabs__link--active,
+.md-tabs__link:hover {
+  color: #D4A843 !important;
 }
 
 /* Admonition overrides for brand consistency */
