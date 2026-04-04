@@ -20,6 +20,6 @@ It launched in 2025. Most teams haven't seen it yet.
 
 ## Resources
 
-- [Flux MCP Server Documentation](https://fluxcd.controlplane.io/operator/mcp/){ target="_blank" }
-- [AI Prompting Guide for Flux](https://fluxcd.controlplane.io/operator/mcp-prompting/){ target="_blank" }
-- [Blog: AI-Assisted GitOps with Flux Operator MCP Server](https://fluxcd.controlplane.io/blog/2025/05/flux-mcp/){ target="_blank" }
+- [Flux MCP Server Documentation](https://fluxoperator.dev/mcp-server/){ target="_blank" }
+- [AI Prompting Guide for Flux](https://fluxoperator.dev/docs/mcp/prompting/){ target="_blank" }
+- [Blog: AI-Assisted GitOps](https://fluxcd.io/blog/2025/05/ai-assisted-gitops/){ target="_blank" }
