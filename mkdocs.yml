@@ -10,19 +10,17 @@ site_dir: public
 # Page tree
 nav:
   - Home: index.md
-  - Accessing Your Environment: access.md
+  - Agenda: agenda.md
+  - Environment: access.md
   - Labs:
       - 1. Your First GitOps Pipeline: labs/1-first-pipeline.md
       - 2. Multi-Environment Mastery: labs/2-multi-environment.md
       - 3. Helm Integration: labs/3-helm-integration.md
       - 4. Secret Management with SOPS: labs/4-sops-secrets.md
       - 5. Monitoring & Troubleshooting: labs/5-monitoring-troubleshooting.md
-  - Flux MCP Server Demo: labs/flux-mcp-demo.md
-  - Resources:
-      - About Your Instructor: about-instructor.md
-      - Free Guide - 10 GitOps Landmines: https://guides.platformfix.com/gitops-10-landmines
-      - Book a Platform Review: https://calendly.com/platformfixer/devops-pro
-      - Provide Feedback: https://forms.gle/HxoVhSZRNk49BweS9
+      - Flux MCP Server Demo: labs/flux-mcp-demo.md
+  - Resources: resources.md
+  - Instructor: about-instructor.md
 
 # Configuration
 theme:
