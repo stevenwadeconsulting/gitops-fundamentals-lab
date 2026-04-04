@@ -54,19 +54,6 @@ A full day of hands-on GitOps. Five labs. One demo. Zero slides you'll forget by
 
 ---
 
-## What You'll Learn
-
-| Skill | What You'll Be Able to Do Monday |
-|-------|----------------------------------|
-| GitOps with Flux Operator | Deploy through Git. No kubectl apply. |
-| Multi-Environment Pipelines | Promote across environments with a single PR. |
-| Helm Integration | Manage charts declaratively. No helm install. |
-| Secret Management | Encrypted secrets in Git. No Slack. |
-| Troubleshooting | Debug like someone who's done it 50+ times. |
-| AI-Assisted GitOps | Talk to your cluster in plain English. |
-
----
-
 ## Prerequisites
 
 You're ready if you can:
