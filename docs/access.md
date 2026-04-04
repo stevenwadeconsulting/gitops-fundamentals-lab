@@ -1,73 +1,117 @@
-# Accessing Your Workshop Environment
+# Your Environment
 
-This guide explains how to access your dedicated environment for the GitOps Fundamentals workshop.
+Everything is pre-configured. No local installs. You'll be deploying within 45 minutes.
 
-## Access Overview
+---
 
-Each participant has been assigned their own environment consisting of:
+## What You Get
 
-- A bastion host (jump server) in Digital Ocean
-- A Kubernetes cluster with Flux pre-installed
-- A dedicated GitHub repository for GitOps workflows
+- A **bastion node** with kubectl, Flux, Helm, SOPS, and age pre-installed
+- A **Kubernetes cluster** with worker nodes ready
+- A **personal GitHub repository** for your GitOps workflow (via GitHub Classroom)
+- A **personal instruction page** with your SSH key and connection details
 
-## 1️⃣ Find Your Participant Number
+---
 
-Locate the participant number provided on your desk. You will need this number to access your unique environment.
+## Step 1: Open Your Instruction Page
 
-## 2️⃣ Access Your Instructions Page
+Find the card on your desk with your participant number.
 
-Open your web browser and navigate to the following URL, replacing `<participant number>` with your assigned number:
+Open your browser and go to:
 
 ```
-https://gitops-workshop.lon1.digitaloceanspaces.com/<participant number>/instructions.html
+https://workshop.platformfix.com/gitops/join/participant-XXX/
 ```
 
-For example, if your participant number is 042, you would navigate to:
+Replace `XXX` with your number. For example, participant 7:
+
 ```
-https://gitops-workshop.lon1.digitaloceanspaces.com/participant-042/instructions.html
+https://workshop.platformfix.com/gitops/join/participant-007/
 ```
 
-## 3️⃣ Follow the Web Instructions
+Your instruction page has everything you need: SSH key download, bastion IP, cluster details, and your GitHub repo URL.
 
-On the instruction page, you will find:
+!!! tip "Keep this tab open"
+    You'll reference your instruction page throughout the day.
 
-- SSH credentials for your bastion host
-- Details about your Kubernetes environment
-- **Your GitHub Personal Access Token (PAT)** - you will need this in Lab 1
-- **Your GitHub repository URL** - this is your personal copy of the workshop repo
-- Initial access instructions
+---
 
-!!! warning
-    Keep your instructions page open throughout the workshop. You will need the **PAT** and **repository URL** during the labs.
+## Step 2: Download Your SSH Key and Connect
 
-Follow all steps provided on this page to connect to your bastion host.
+From your instruction page:
 
-## 4️⃣ Set Up Your Workshop Environment
+1. Click **Download SSH Private Key**
+2. Open a terminal and set permissions:
 
-Once you have successfully connected to your bastion host, your participant repository has been pre-cloned. Navigate to it:
+    ```bash
+    chmod 600 id_rsa
+    ```
+
+3. Connect to your bastion node (the command is on your instruction page):
+
+    ```bash
+    ssh -i id_rsa root@<your-bastion-ip>
+    ```
+
+!!! note "Windows users"
+    Use WSL or Git Bash. If you must use PuTTY, convert the key to PPK format with PuTTYgen.
+
+---
+
+## Step 3: Verify Your Cluster
+
+Once connected to your bastion:
 
 ```bash
-cd ~/workshop
-cd examples
+kubectl get nodes
 ```
 
-## 5️⃣ Verify Flux Is Running
+You should see worker nodes in `Ready` state. If not, raise your hand.
 
-Confirm that Flux is installed and healthy on your cluster:
+---
+
+## Step 4: Accept Your GitHub Classroom Repository
+
+Steve will share a GitHub Classroom link at the start of the workshop.
+
+1. Click the link
+2. Authorise with your GitHub account
+3. A private repository will be created for you under the `platformfix` organisation
+4. Clone it to your **local machine** (not the bastion):
+
+    ```bash
+    git clone <your-repo-url>
+    ```
+
+!!! warning "Git changes happen on your laptop, not the bastion"
+    You'll edit files and push from your local machine. The bastion is for running kubectl and flux commands to observe what Flux does with your changes.
+
+---
+
+## Step 5: Verify Your Tools
+
+On the bastion, confirm everything is installed:
 
 ```bash
-flux check
+kubectl version --client
+flux version --client
+flux-operator --version
+helm version --short
+sops --version
+age --version
 ```
 
-You should see all Flux components reporting as healthy. If you encounter any issues, ask for assistance before proceeding.
+All commands should return version numbers. If anything is missing, raise your hand.
+
+---
 
 ## Troubleshooting
 
-If you encounter any issues:
+| Problem | Fix |
+|---------|-----|
+| Can't download SSH key | Try a different browser. Check the URL matches your participant number. |
+| SSH connection refused | Double check the IP from your instruction page. Make sure `chmod 600` was run. |
+| kubectl not working | Run `cat ~/.kube/config` on the bastion. If empty, raise your hand. |
+| GitHub Classroom link not working | Make sure you're signed into GitHub. Try an incognito window. |
 
-1. Double-check your participant number
-2. Ensure you're using the correct SSH credentials from your instructions page
-3. Verify Flux is running: `flux check`
-4. Ask one of the workshop facilitators for assistance
-
-Your environment will remain available throughout the duration of the workshop.
+If none of that works, raise your hand. Don't waste lab time debugging access issues.
