@@ -255,31 +255,29 @@ kubectl describe kustomization apps -n flux-system
 
 Everything you've done so far has been through the CLI. Flux Operator includes a built-in web dashboard that shows your GitOps pipelines visually.
 
-On your **bastion node**, start a port-forward:
+On your **bastion node**, expose the Flux Operator UI via a NodePort service:
 
 ```bash
-kubectl -n flux-system port-forward svc/flux-operator 9080:9080 &
+kubectl -n flux-system patch svc flux-operator -p '{"spec": {"type": "NodePort", "ports": [{"port": 9080, "targetPort": 9080, "nodePort": 30080}]}}'
 ```
 
-Now, on your **local machine**, open an SSH tunnel through the bastion:
+Get one of your cluster node's external IP addresses:
 
 ```bash
-ssh -L 9080:localhost:9080 -i id_rsa root@YOUR_BASTION_IP -N &
+kubectl get nodes -o wide | awk '{print $1, $7}' | tail -1
 ```
-
-Replace `YOUR_BASTION_IP` with your bastion's IP address from the instruction page.
 
 Open your browser and go to:
 
 ```
-http://localhost:9080
+http://<NODE_EXTERNAL_IP>:30080
 ```
 
 !!! success "Visual confirmation"
     You should see your GitOps pipelines: the GitRepository source, the Kustomization for your apps, the reconciliation status, all in one dashboard. Every change you push to Git will appear here. Keep this tab open for the rest of the day.
 
 !!! tip "Troubleshooting the UI"
-    If `localhost:9080` doesn't load, check that both the port-forward on the bastion and the SSH tunnel on your laptop are running. Run `jobs` in each terminal to verify.
+    If the page doesn't load, check that you're using the **external** IP of a worker node (not the bastion IP). Run `kubectl get nodes -o wide` and use the `EXTERNAL-IP` column.
 
 ---
 
