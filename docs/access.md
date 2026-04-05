@@ -105,6 +105,29 @@ All commands should return version numbers. If anything is missing, raise your h
 
 ---
 
+## Step 6: Access the Flux Operator UI (set up in Lab 1)
+
+The Flux Operator includes a built-in web dashboard. Since the bastion has no browser, you access it through an SSH tunnel from your laptop.
+
+**On your bastion node**, start the port-forward:
+
+```bash
+kubectl -n flux-system port-forward svc/flux-operator 9080:9080 &
+```
+
+**On your local machine**, open an SSH tunnel:
+
+```bash
+ssh -L 9080:localhost:9080 -i id_rsa root@YOUR_BASTION_IP -N &
+```
+
+Then open `http://localhost:9080` in your browser.
+
+!!! note "You'll set this up during Lab 1"
+    Don't worry about this step now. Lab 1 will walk you through it after your first deployment.
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |

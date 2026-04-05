@@ -251,6 +251,38 @@ kubectl describe kustomization apps -n flux-system
 
 ---
 
+## Task 10: See it visually - the Flux Operator UI
+
+Everything you've done so far has been through the CLI. Flux Operator includes a built-in web dashboard that shows your GitOps pipelines visually.
+
+On your **bastion node**, start a port-forward:
+
+```bash
+kubectl -n flux-system port-forward svc/flux-operator 9080:9080 &
+```
+
+Now, on your **local machine**, open an SSH tunnel through the bastion:
+
+```bash
+ssh -L 9080:localhost:9080 -i id_rsa root@YOUR_BASTION_IP -N &
+```
+
+Replace `YOUR_BASTION_IP` with your bastion's IP address from the instruction page.
+
+Open your browser and go to:
+
+```
+http://localhost:9080
+```
+
+!!! success "Visual confirmation"
+    You should see your GitOps pipelines: the GitRepository source, the Kustomization for your apps, the reconciliation status, all in one dashboard. Every change you push to Git will appear here. Keep this tab open for the rest of the day.
+
+!!! tip "Troubleshooting the UI"
+    If `localhost:9080` doesn't load, check that both the port-forward on the bastion and the SSH tunnel on your laptop are running. Run `jobs` in each terminal to verify.
+
+---
+
 ## Validation
 
 Confirm all of the following before moving on:
@@ -259,6 +291,7 @@ Confirm all of the following before moving on:
 - [ ] podinfo service exists in the `podinfo` namespace
 - [ ] `flux get kustomizations` shows `apps` as `Ready: True`
 - [ ] Manual `kubectl scale` was automatically reverted by Flux
+- [ ] Flux Operator UI is accessible at `http://localhost:9080`
 
 ---
 
