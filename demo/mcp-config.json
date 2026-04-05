@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "flux-operator-mcp": {
+      "command": "flux-operator-mcp",
+      "args": ["serve", "--read-only=false", "--mask-secrets=true"],
+      "env": {
+        "KUBECONFIG": "/Users/steve.wade/.kube/config"
+      }
+    }
+  }
+}
