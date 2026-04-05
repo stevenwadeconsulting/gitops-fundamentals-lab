@@ -2,7 +2,7 @@
 
 Your repository already contains an encrypted secret. In this lab, you'll give Flux the key to decrypt it, configure the decryption pipeline, and watch encrypted YAML in Git become a running secret in your cluster.
 
-**Duration:** 30 minutes
+<span class="lab-duration">30 minutes</span>
 
 ---
 

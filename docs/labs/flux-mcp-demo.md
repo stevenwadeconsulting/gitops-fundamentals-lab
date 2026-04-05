@@ -2,7 +2,7 @@
 
 AI-assisted GitOps. Talk to your cluster in natural language. Debug, analyse, and operate your GitOps pipelines without memorising kubectl commands.
 
-**Duration:** 20 minutes (live demo by Steve, not a hands-on lab)
+<span class="lab-duration">20 minutes &middot; live demo</span>
 
 ---
 

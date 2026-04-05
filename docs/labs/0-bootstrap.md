@@ -2,7 +2,7 @@
 
 Install the Flux Operator and point it at your repository. By the end of this lab, Flux will be managing itself from your Git repo.
 
-**Duration:** 20 minutes
+<span class="lab-duration">20 minutes</span>
 
 ---
 

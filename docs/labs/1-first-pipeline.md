@@ -2,7 +2,7 @@
 
 Deploy an application through Git. No `kubectl apply`. No CI pipeline. Push to Git, watch it appear in your cluster.
 
-**Duration:** 50 minutes
+<span class="lab-duration">50 minutes</span>
 
 ---
 

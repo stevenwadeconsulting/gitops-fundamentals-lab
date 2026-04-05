@@ -190,3 +190,16 @@
 [data-md-color-scheme="slate"] .md-typeset div[style*="background-color"] li {
   color: #B0B8C4 !important;
 }
+
+/* Lab duration badge */
+.lab-duration {
+  display: inline-block;
+  background: #1F2937;
+  border: 1px solid #D4A843;
+  border-radius: 16px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #D4A843;
+  margin-bottom: 16px;
+}

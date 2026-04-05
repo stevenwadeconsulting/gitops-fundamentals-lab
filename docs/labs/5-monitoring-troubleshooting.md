@@ -2,7 +2,7 @@
 
 Break things on purpose. Learn how to find out what's wrong, why it's wrong, and fix it through Git.
 
-**Duration:** 25 minutes
+<span class="lab-duration">25 minutes</span>
 
 ---
 

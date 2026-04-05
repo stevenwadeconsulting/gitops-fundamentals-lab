@@ -2,7 +2,7 @@
 
 Deploy the same application to dev, staging, and production with different configurations. One codebase. Three environments. Zero drift.
 
-**Duration:** 80 minutes
+<span class="lab-duration">80 minutes</span>
 
 ---
 

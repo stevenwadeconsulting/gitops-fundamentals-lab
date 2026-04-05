@@ -2,7 +2,7 @@
 
 Replace raw YAML with a Helm chart managed by Flux. Same application. Proper packaging. Values, upgrades, and rollback built in.
 
-**Duration:** 40 minutes
+<span class="lab-duration">40 minutes</span>
 
 ---
 
