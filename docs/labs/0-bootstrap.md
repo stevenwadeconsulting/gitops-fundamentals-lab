@@ -24,7 +24,7 @@ Before starting, make sure you have:
 
 - [x] Connected to your bastion node via SSH (see [Environment](../access.md))
 - [x] Verified `kubectl get nodes` shows Ready nodes
-- [x] Cloned your GitHub Classroom repository to your **local machine**
+- [x] Accepted the [GitHub Classroom assignment](https://classroom.github.com/a/NvFcUrPS) and cloned your repo to your **local machine**
 
 ---
 

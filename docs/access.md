@@ -72,9 +72,11 @@ You should see worker nodes in `Ready` state. If not, raise your hand.
 
 ## Step 4: Accept Your GitHub Classroom Repository
 
-Steve will share a GitHub Classroom link at the start of the workshop.
+Click the GitHub Classroom link below (or Steve will share it on screen):
 
-1. Click the link
+[Accept the Workshop Assignment](https://classroom.github.com/a/NvFcUrPS){ .md-button .md-button--primary target="_blank" }
+
+1. Click the link above
 2. Authorise with your GitHub account
 3. A private repository will be created for you under the `platformfix` organisation
 4. Clone it to your **local machine** (not the bastion):
