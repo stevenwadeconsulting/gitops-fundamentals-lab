@@ -39,6 +39,7 @@ theme:
     - content.code.annotate
     - search.highlight
     - search.share
+  favicon: assets/favicon.png
   icon:
     logo: material/delete-outline
   font:
