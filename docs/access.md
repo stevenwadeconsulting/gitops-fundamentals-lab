@@ -4,6 +4,45 @@ Everything is pre-configured. No local installs. You'll be deploying within 45 m
 
 ---
 
+## How It All Fits Together
+
+```mermaid
+graph TB
+    subgraph Your Laptop
+        A[Text Editor] -->|edit YAML| B[Git Client]
+        B -->|git push| C[GitHub Repository]
+    end
+
+    subgraph GitHub
+        C -->|Flux watches| D[Your GitOps Repo]
+    end
+
+    subgraph Kubernetes Cluster
+        E[Flux Controllers] -->|pull from| D
+        E -->|apply| F[Your Applications]
+        E -->|reconcile| F
+    end
+
+    subgraph Bastion Node
+        G[kubectl] -->|observe| F
+        H[flux CLI] -->|status| E
+    end
+
+    I[You via SSH] --> G
+    I --> H
+
+    style A fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style C fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style D fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style F fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+    style G fill:#1F2937,stroke:#374151,color:#F0EFE8
+    style H fill:#1F2937,stroke:#374151,color:#F0EFE8
+```
+
+**Your laptop** is where you write code and push to Git. **The bastion node** is where you observe what Flux did. **You never deploy from either.** Git is the only way changes reach the cluster.
+
+---
+
 ## What You Get
 
 - A **bastion node** with kubectl, Flux, Helm, SOPS, and age pre-installed
