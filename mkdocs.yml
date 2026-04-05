@@ -20,6 +20,8 @@ nav:
       - 4. Secret Management with SOPS: labs/4-sops-secrets.md
       - 5. Monitoring & Troubleshooting: labs/5-monitoring-troubleshooting.md
       - Flux MCP Server Demo: labs/flux-mcp-demo.md
+      - What You Built: labs/summary.md
+  - Cheat Sheet: cheatsheet.md
   - Resources: resources.md
   - Instructor: about-instructor.md
 
