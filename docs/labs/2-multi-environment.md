@@ -1,346 +1,423 @@
 # Lab 2: Multi-Environment Mastery
 
-## Introduction
+Deploy the same application to dev, staging, and production with different configurations. One codebase. Three environments. Zero drift.
 
-In the real world, you don't deploy straight to production. You need development, staging, and production environments - each with their own configurations, resource limits, and replicas. The challenge is managing these differences without duplicating manifests everywhere.
+**Duration:** 80 minutes
 
-In this lab, you'll use Kustomize overlays to manage multiple environments from a single set of base manifests. You'll build a promotion workflow that gives you confidence, not anxiety.
+---
 
 ## Objectives
 
-By the end of this lab, you will be able to:
+By the end of this lab, you will:
 
-- Structure a GitOps repository for multiple environments
-- Use Kustomize base and overlays for environment-specific configuration
-- Deploy the same application to dev, staging, and production with different settings
-- Implement a promotion workflow between environments
-- Understand common repository structures and when to use each
+- Restructure your repo using Kustomize base and overlays
+- Deploy the same application to three environments with different settings
+- Promote changes across environments through Git
+- Understand why this eliminates "it works in staging" as a sentence
+
+---
 
 ## Prerequisites
 
-- Completion of [Lab 1: Your First GitOps Pipeline](1-first-pipeline.md)
-- Understanding of Flux GitRepository and Kustomization resources
+- [x] Completed [Lab 1: Your First GitOps Pipeline](1-first-pipeline.md)
+- [x] podinfo is running in the `podinfo` namespace with 3 replicas
 
-!!! warning
-    Execute `cd ../002-multi-environment` to navigate to this lab directory
+---
 
-## Lab Tasks
+## The Problem
 
-### Task 1: Understanding the Repository Structure
+Right now you have one deployment of podinfo. In production, you need the same application running in dev (for testing), staging (for validation), and production (for real traffic). Each with different replica counts, resource limits, and possibly different image versions.
 
-Let's examine the multi-environment structure we'll be working with:
+The wrong way: copy the YAML three times. Now you have three files to maintain, three sources of drift, and no guarantee they're consistent.
 
-```bash
-# View the directory structure
-find . -type f -name "*.yaml" | sort
-```
+The right way: one base definition, three overlays that patch only what's different.
 
-The structure follows a base-and-overlays pattern:
+---
 
-```
-002-multi-environment/
-├── base/
-│   ├── kustomization.yaml
-│   ├── namespace.yaml
-│   ├── deployment.yaml
-│   └── service.yaml
-└── overlays/
-    ├── dev/
-    │   ├── kustomization.yaml
-    │   └── patch-replicas.yaml
-    ├── staging/
-    │   ├── kustomization.yaml
-    │   └── patch-replicas.yaml
-    └── production/
-        ├── kustomization.yaml
-        ├── patch-replicas.yaml
-        └── patch-resources.yaml
-```
+## Task 1: Restructure apps into base and overlays
 
-!!! info
-    The **base** directory contains the common manifests shared across all environments. Each **overlay** directory contains environment-specific patches that modify the base. This approach eliminates duplication while allowing environment-specific customisation.
+On your **local machine**, restructure the `apps/podinfo/` directory.
 
-Let's examine the base manifests:
+First, create the new directory structure:
 
 ```bash
-# View the base kustomization
-cat base/kustomization.yaml
-
-# View the base deployment
-cat base/deployment.yaml
-
-# View the base service
-cat base/service.yaml
+mkdir -p apps/podinfo/base
+mkdir -p apps/podinfo/overlays/dev
+mkdir -p apps/podinfo/overlays/staging
+mkdir -p apps/podinfo/overlays/production
 ```
 
-Now examine the overlay patches:
+Move your existing files into the base:
 
 ```bash
-# Dev overlay - minimal resources, single replica
-cat overlays/dev/kustomization.yaml
-cat overlays/dev/patch-replicas.yaml
-
-# Staging overlay - moderate resources, 2 replicas
-cat overlays/staging/kustomization.yaml
-cat overlays/staging/patch-replicas.yaml
-
-# Production overlay - full resources, 3 replicas, resource limits
-cat overlays/production/kustomization.yaml
-cat overlays/production/patch-replicas.yaml
-cat overlays/production/patch-resources.yaml
+mv apps/podinfo/namespace.yaml apps/podinfo/base/
+mv apps/podinfo/deployment.yaml apps/podinfo/base/
+mv apps/podinfo/service.yaml apps/podinfo/base/
+mv apps/podinfo/kustomization.yaml apps/podinfo/base/
 ```
 
-### Task 2: Deploying to the Dev Environment
+---
 
-Let's start by deploying to the dev environment. First, create the Flux Kustomization:
+## Task 2: Update the base Kustomization
 
-```bash
-# View the dev Flux Kustomization
-cat flux/dev-kustomization.yaml
-```
+Edit `apps/podinfo/base/kustomization.yaml` to ensure it references the correct files:
 
 ```yaml
-# flux/dev-kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+```
+
+Also update `apps/podinfo/base/deployment.yaml`. Change the replicas back to 1 (the base is the minimum, overlays scale up):
+
+```yaml
+spec:
+  replicas: 1
+```
+
+And remove the namespace from the base deployment and service. The overlays will set the namespace per environment. Update both `apps/podinfo/base/deployment.yaml` and `apps/podinfo/base/service.yaml`:
+
+Remove or change the `namespace` field to be set by the overlay.
+
+Actually, keep it simple. Remove `namespace.yaml` from the base entirely. Each overlay will create its own namespace. Update `apps/podinfo/base/kustomization.yaml`:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+```
+
+And remove the `namespace:` field from both `deployment.yaml` and `service.yaml` in the base. The overlay will set it.
+
+---
+
+## Task 3: Create the dev overlay
+
+Create `apps/podinfo/overlays/dev/namespace.yaml`:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+```
+
+Create `apps/podinfo/overlays/dev/kustomization.yaml`:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: dev
+resources:
+  - namespace.yaml
+  - ../../base
+patches:
+  - target:
+      kind: Deployment
+      name: podinfo
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+```
+
+!!! info "What's happening here?"
+    The overlay imports everything from `../../base` (the deployment and service) and applies it to the `dev` namespace. The patch sets replicas to 1. Dev doesn't need 3 replicas.
+
+---
+
+## Task 4: Create the staging overlay
+
+Create `apps/podinfo/overlays/staging/namespace.yaml`:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+```
+
+Create `apps/podinfo/overlays/staging/kustomization.yaml`:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: staging
+resources:
+  - namespace.yaml
+  - ../../base
+patches:
+  - target:
+      kind: Deployment
+      name: podinfo
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 150m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 128Mi
+```
+
+---
+
+## Task 5: Create the production overlay
+
+Create `apps/podinfo/overlays/production/namespace.yaml`:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+```
+
+Create `apps/podinfo/overlays/production/kustomization.yaml`:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: production
+resources:
+  - namespace.yaml
+  - ../../base
+patches:
+  - target:
+      kind: Deployment
+      name: podinfo
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 3
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 200m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 256Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 500m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 512Mi
+```
+
+---
+
+## Task 6: Update the Flux Kustomizations
+
+Now tell Flux about each environment. On your **local machine**, replace `clusters/apps.yaml` with three separate Kustomizations.
+
+Delete `clusters/apps.yaml` and create three new files.
+
+Create `clusters/apps-dev.yaml`:
+
+```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: app-dev
+  name: apps-dev
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./examples/002-multi-environment/overlays/dev
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
+  path: ./apps/podinfo/overlays/dev
   wait: true
   timeout: 2m
 ```
 
-Apply the dev Kustomization:
+Create `clusters/apps-staging.yaml`:
 
-```bash
-kubectl apply -f flux/dev-kustomization.yaml
-```
-
-Wait for the deployment and verify:
-
-```bash
-# Watch the reconciliation
-flux get kustomizations --watch
-
-# Check what was deployed
-kubectl get all -n app-dev
-```
-
-!!! note
-    Notice the dev environment has a single replica and minimal resource requests. This keeps development costs low while still running the full application stack.
-
-### Task 3: Deploying to Staging
-
-Now let's deploy to staging:
-
-```bash
-# View the staging Flux Kustomization
-cat flux/staging-kustomization.yaml
-
-# Apply the staging Kustomization
-kubectl apply -f flux/staging-kustomization.yaml
-
-# Watch the reconciliation
-flux get kustomizations --watch
-
-# Check what was deployed
-kubectl get all -n app-staging
-```
-
-Compare the dev and staging deployments:
-
-```bash
-# Compare replica counts
-echo "Dev replicas:"
-kubectl get deployment nginx -n app-dev -o jsonpath='{.spec.replicas}'
-echo ""
-echo "Staging replicas:"
-kubectl get deployment nginx -n app-staging -o jsonpath='{.spec.replicas}'
-echo ""
-```
-
-### Task 4: Deploying to Production
-
-Finally, let's deploy to production:
-
-```bash
-# View the production Flux Kustomization
-cat flux/production-kustomization.yaml
-
-# Apply the production Kustomization
-kubectl apply -f flux/production-kustomization.yaml
-
-# Watch the reconciliation
-flux get kustomizations --watch
-
-# Check what was deployed
-kubectl get all -n app-production
-```
-
-Compare all three environments:
-
-```bash
-# Compare deployments across environments
-for env in dev staging production; do
-  echo "=== $env ==="
-  kubectl get deployment nginx -n app-$env -o jsonpath='{.spec.replicas} replicas, image: {.spec.template.spec.containers[0].image}'
-  echo ""
-  kubectl get deployment nginx -n app-$env -o jsonpath='resources: {.spec.template.spec.containers[0].resources}'
-  echo ""
-  echo ""
-done
-```
-
-!!! info
-    Same application, same base manifests, but each environment has appropriate settings:
-
-    - **Dev**: 1 replica, minimal resources - fast iteration, low cost
-    - **Staging**: 2 replicas, moderate resources - mirrors production structure
-    - **Production**: 3 replicas, full resources with limits - reliability and performance
-
-### Task 5: Simulating a Promotion Workflow
-
-In a real GitOps workflow, promoting from dev to staging to production happens through Git. Let's simulate updating the application image version across environments.
-
-First, update the dev overlay with a new image tag:
-
-```bash
-# Update the image in the dev overlay
-cd overlays/dev
-cat > patch-image.yaml << 'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx
-spec:
-  template:
-    spec:
-      containers:
-        - name: nginx
-          image: nginx:1.27-alpine
-EOF
-
-# Add the patch to the dev kustomization
-```
-
-Edit the dev `kustomization.yaml` to include the new patch:
-
-```bash
-cat > kustomization.yaml << 'EOF'
-apiVersion: kustomize.config.k8s.io/v1beta1
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
-namespace: app-dev
-resources:
-  - ../../base
-patches:
-  - path: patch-replicas.yaml
-  - path: patch-image.yaml
-EOF
+metadata:
+  name: apps-staging
+  namespace: flux-system
+spec:
+  interval: 5m
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/podinfo/overlays/staging
+  wait: true
+  timeout: 2m
+```
+
+Create `clusters/apps-production.yaml`:
+
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apps-production
+  namespace: flux-system
+spec:
+  interval: 5m
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/podinfo/overlays/production
+  wait: true
+  timeout: 2m
+```
+
+---
+
+## Task 7: Clean up the old namespace
+
+Delete `apps/podinfo/base/namespace.yaml` if it's still there. The old `podinfo` namespace from Lab 1 will be pruned by Flux once we push, because the old `clusters/apps.yaml` that referenced it is gone.
+
+---
+
+## Task 8: Push and watch all three environments deploy
+
+Your repo should now look like this:
+
+```
+your-repo/
+├── clusters/
+│   ├── flux-instance.yaml
+│   ├── apps-dev.yaml            <-- NEW
+│   ├── apps-staging.yaml        <-- NEW
+│   └── apps-production.yaml     <-- NEW
+├── apps/
+│   └── podinfo/
+│       ├── base/
+│       │   ├── kustomization.yaml
+│       │   ├── deployment.yaml
+│       │   └── service.yaml
+│       └── overlays/
+│           ├── dev/
+│           │   ├── kustomization.yaml
+│           │   └── namespace.yaml
+│           ├── staging/
+│           │   ├── kustomization.yaml
+│           │   └── namespace.yaml
+│           └── production/
+│               ├── kustomization.yaml
+│               └── namespace.yaml
+└── ...
 ```
 
 Commit and push:
 
 ```bash
-cd ../../..
-git add .
-git commit -m "feat: update dev to nginx 1.27-alpine"
-git push origin main
+git add -A
+git commit -m "Restructure podinfo for multi-environment with Kustomize overlays"
+git push
 ```
 
-Reconcile and verify:
+On your **bastion node**, watch all three kustomizations reconcile:
 
 ```bash
-flux reconcile source git flux-system
-flux reconcile kustomization app-dev
-
-# Verify the image was updated in dev
-kubectl get deployment nginx -n app-dev -o jsonpath='{.spec.template.spec.containers[0].image}'
+flux get kustomizations --watch
 ```
 
-!!! tip
-    In a production workflow, you would:
+Once all three show `Ready: True`, verify:
 
-    1. Create a PR to update the image in the dev overlay
-    2. After testing in dev, create another PR to update the staging overlay
-    3. After testing in staging, create a final PR to update the production overlay
-
-    Each promotion is a Git commit with a clear audit trail. No manual `kubectl` commands needed.
-
-### Task 6: Understanding Repository Structures
-
-There are two common approaches for structuring GitOps repositories:
-
-**Monorepo (what we're using)**
+```bash
+kubectl get pods -n dev
+kubectl get pods -n staging
+kubectl get pods -n production
 ```
-repo/
+
+You should see:
+
+- **dev**: 1 replica
+- **staging**: 2 replicas
+- **production**: 3 replicas
+
+Same application. Same base. Different configurations. Zero duplication.
+
+!!! success "The aha moment"
+    Three environments deployed from one base definition. Change the base and all three update. Change an overlay and only that environment changes. Promote a new image by updating one line in the base. This is how you eliminate "it works in staging."
+
+---
+
+## Task 9: Promote a change across environments
+
+On your **local machine**, update the image version in the base. Edit `apps/podinfo/base/deployment.yaml`:
+
+```yaml
+image: ghcr.io/stefanprodan/podinfo:6.8.0    # changed from 6.7.0
+```
+
+Commit and push:
+
+```bash
+git add -A
+git commit -m "Upgrade podinfo to 6.8.0 across all environments"
+git push
+```
+
+On your **bastion node**, watch all three environments update:
+
+```bash
+kubectl get pods -n dev --watch &
+kubectl get pods -n staging --watch &
+kubectl get pods -n production --watch &
+```
+
+All three environments update to 6.8.0. One commit. Three deployments. No manual intervention.
+
+Press `Ctrl+C` to stop the watches when done.
+
+---
+
+## Validation
+
+Confirm all of the following before moving on:
+
+- [ ] Three namespaces exist: `dev`, `staging`, `production`
+- [ ] dev has 1 podinfo replica
+- [ ] staging has 2 podinfo replicas
+- [ ] production has 3 podinfo replicas
+- [ ] All pods are running podinfo:6.8.0
+- [ ] The old `podinfo` namespace from Lab 1 has been pruned
+- [ ] `flux get kustomizations` shows `apps-dev`, `apps-staging`, `apps-production` all `Ready: True`
+
+---
+
+## What you built
+
+```
+your-repo/
+├── clusters/
+│   ├── flux-instance.yaml
+│   ├── apps-dev.yaml
+│   ├── apps-staging.yaml
+│   └── apps-production.yaml
 ├── apps/
-│   ├── base/
-│   └── overlays/
-│       ├── dev/
-│       ├── staging/
-│       └── production/
-└── infrastructure/
-    ├── base/
-    └── overlays/
+│   └── podinfo/
+│       ├── base/                    <-- Shared definition
+│       │   ├── kustomization.yaml
+│       │   ├── deployment.yaml
+│       │   └── service.yaml
+│       └── overlays/                <-- Environment-specific patches
+│           ├── dev/
+│           ├── staging/
+│           └── production/
+└── ...
 ```
 
-**Repo-per-environment**
-```
-app-config-dev/        # Dev environment repository
-app-config-staging/    # Staging environment repository
-app-config-production/ # Production environment repository
-```
+One base. Three overlays. Each overlay patches only what's different: replicas, resources, environment-specific settings. Everything else is inherited from the base. DRY configuration that scales from 3 environments to 30.
 
-!!! info
-    **Monorepo** works well for teams of 5-15. Everything is in one place, easy to see the full picture, and promotion is a directory-level change.
+!!! quote "Think about your current setup"
+    How many environments does your team manage? How different are the configs between them? How often does staging not match production? That's where Kustomize overlays change the game.
 
-    **Repo-per-environment** works better for teams of 50+. It provides stronger access control (who can push to the production repo) and clearer separation of concerns.
-
-    Choose based on your team size and security requirements, not on what looks more sophisticated.
-
-### Task 7: Cleanup
-
-Before moving to the next lab, clean up all environment deployments:
-
-```bash
-# Delete all Kustomizations
-kubectl delete kustomization app-dev app-staging app-production -n flux-system
-
-# Verify resources are cleaned up
-kubectl get all -n app-dev
-kubectl get all -n app-staging
-kubectl get all -n app-production
-flux get kustomizations
-```
-
-## Lab Validation
-
-Let's confirm you've mastered the key concepts from this lab:
-
-- You understand how Kustomize base and overlays work for multi-environment management
-- You can deploy the same application with different configurations per environment
-- You understand how promotion workflows work through Git commits
-- You know the trade-offs between monorepo and repo-per-environment structures
-
-## Summary
-
-Congratulations! You have completed Lab 2 of the GitOps Fundamentals Workshop. In this lab, you've learned:
-
-1. How to structure a repository for multiple environments using Kustomize
-2. How base manifests and overlay patches eliminate duplication
-3. How to deploy to dev, staging, and production with environment-specific configuration
-4. How promotion workflows use Git commits to move changes between environments
-5. The trade-offs between different repository structures
-
-This pattern is the foundation of enterprise GitOps. Every organisation that "gets it" uses some variation of this approach.
-
-## Next Steps
-
-Proceed to [Lab 3: Helm Integration](3-helm-integration.md) to learn how to manage Helm charts the GitOps way.
+[Next: Lab 3 - Helm Integration](3-helm-integration.md){ .md-button .md-button--primary }
