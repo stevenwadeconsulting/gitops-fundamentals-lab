@@ -1,365 +1,285 @@
-# Lab 6: Monitoring & Troubleshooting
+# Lab 5: Monitoring and Troubleshooting
 
-## Introduction
+Break things on purpose. Learn how to find out what's wrong, why it's wrong, and fix it through Git.
 
-Things will go wrong. The question isn't if, but when - and how quickly you can figure out what happened and fix it. In this lab, you'll learn the monitoring, troubleshooting, and rollback patterns that come from rescuing 50+ platforms.
+**Duration:** 25 minutes
 
-This lab is about building the muscle memory so that when something goes wrong at 6 PM on a Friday, you know exactly where to look and what to do.
+---
 
 ## Objectives
 
-By the end of this lab, you will be able to:
+By the end of this lab, you will:
 
-- Monitor the health of your Flux controllers and reconciliation
-- Set up Flux notifications and alerts
-- Troubleshoot common Flux failures with confidence
-- Perform rollbacks using Git (the GitOps way)
-- Understand the troubleshooting patterns that work in production
+- Monitor Flux health and reconciliation status
+- Use the four-step troubleshooting pattern from 50+ platform rescues
+- Diagnose and fix a broken deployment through Git
+- Perform a rollback using `git revert` (not `kubectl rollout undo`)
+- Suspend and resume Flux reconciliation for maintenance
+
+---
 
 ## Prerequisites
 
-- Completion of [Lab 5: Secret Management with SOPS](5-sops-secrets.md)
-- Understanding of all Flux resources covered so far
+- [x] Completed [Lab 4: Secret Management with SOPS](4-sops-secrets.md)
+- [x] podinfo running in multiple namespaces via raw YAML, overlays, and Helm
 
-!!! warning
-    Execute `cd ../006-monitoring-troubleshooting` to navigate to this lab directory
+---
 
-## Lab Tasks
+## Task 1: Check the health of everything
 
-### Task 1: Monitoring Flux Health
-
-Let's start with the commands you'll use every day to understand the state of your cluster:
+On your **bastion node**, get a full picture of your Flux deployment:
 
 ```bash
-# The single most useful command - shows everything
 flux get all
+```
 
-# Check all sources
-flux get sources all
+This shows every Flux resource: GitRepositories, Kustomizations, HelmRepositories, HelmReleases. Everything should be `Ready: True`.
 
-# Check all Kustomizations
-flux get kustomizations
+For a quick health check of the Flux controllers themselves:
 
-# Check all HelmReleases
-flux get helmreleases
-
-# Check controller health
+```bash
 flux check
 ```
 
-!!! info
-    `flux get all` is your dashboard. It shows every Flux resource, its status, and when it was last reconciled. Make this your first command when investigating any issue.
+All components should report as healthy.
 
-Let's look at the Flux controller logs:
+---
+
+## Task 2: Learn the four-step troubleshooting pattern
+
+When something goes wrong in a Flux-managed cluster, follow this pattern every time:
 
 ```bash
-# View source-controller logs
-kubectl logs -n flux-system deploy/source-controller --tail=20
+# Step 1: What failed?
+flux get all
 
-# View kustomize-controller logs
+# Step 2: What's the error?
+kubectl describe kustomization <name> -n flux-system
+
+# Step 3: What happened?
+flux events --for kustomization/<name>
+
+# Step 4: Why?
 kubectl logs -n flux-system deploy/kustomize-controller --tail=20
-
-# View helm-controller logs
-kubectl logs -n flux-system deploy/helm-controller --tail=20
 ```
 
-### Task 2: Setting Up Flux Notifications
+!!! info "This pattern works for everything"
+    Replace `kustomization` with `helmrelease`, `gitrepository`, or any Flux resource. The four steps are the same: status, describe, events, logs.
 
-Flux can send notifications to Slack, Microsoft Teams, GitHub, and other providers. Let's set up a notification provider and alert:
+---
 
-```bash
-# View the notification provider manifest
-cat notification-provider.yaml
-```
+## Task 3: Break something on purpose
+
+On your **local machine**, introduce a deliberate error. Edit `apps/podinfo/overlays/dev/kustomization.yaml` and add an invalid patch:
 
 ```yaml
-# notification-provider.yaml
-apiVersion: notification.toolkit.fluxcd.io/v1beta3
-kind: Provider
-metadata:
-  name: github-status
-  namespace: flux-system
-spec:
-  type: github
-  address: https://github.com/stevenwadeconsulting/gitops-fundamentals-lab
-  secretRef:
-    name: github-credentials
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: dev
+resources:
+  - namespace.yaml
+  - ../../base
+patches:
+  - target:
+      kind: Deployment
+      name: podinfo
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: this-does-not-exist
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 99
 ```
+
+Commit and push:
 
 ```bash
-# View the alert manifest
-cat alert.yaml
+git add -A
+git commit -m "Break dev overlay with invalid patch target"
+git push
 ```
 
-```yaml
-# alert.yaml
-apiVersion: notification.toolkit.fluxcd.io/v1beta3
-kind: Alert
-metadata:
-  name: on-call-alert
-  namespace: flux-system
-spec:
-  providerRef:
-    name: github-status
-  eventSeverity: error
-  eventSources:
-    - kind: Kustomization
-      name: "*"
-    - kind: HelmRelease
-      name: "*"
-  summary: "Flux reconciliation error"
-```
+---
 
-Apply the notification resources:
+## Task 4: Diagnose the failure
+
+On your **bastion node**, watch the kustomization fail:
 
 ```bash
-kubectl apply -f notification-provider.yaml
-kubectl apply -f alert.yaml
-
-# Verify the alert is configured
-flux get alerts
-```
-
-!!! info
-    Alerts filter events by severity and source. Setting `eventSeverity: error` means you'll only be notified when something fails - not on every successful reconciliation. In production, you'd typically set up alerts for errors and a separate channel for informational events.
-
-### Task 3: Triggering and Diagnosing a Failure
-
-Let's deploy something that will fail and walk through the troubleshooting process:
-
-```bash
-# Deploy an application with an intentional error
-kubectl apply -f broken-kustomization.yaml
-```
-
-Now let's diagnose the failure:
-
-```bash
-# Step 1: Check the overall status
-flux get all
-
-# Step 2: Look at the failing resource
-flux get kustomizations
-
-# Step 3: Get the error details
-kubectl describe kustomization broken-app -n flux-system
-
-# Step 4: Check the events
-flux events --for kustomization/broken-app
-
-# Step 5: Check the controller logs for more detail
-kubectl logs -n flux-system deploy/kustomize-controller --tail=50 | grep broken-app
-```
-
-!!! tip
-    The troubleshooting pattern is always the same:
-
-    1. **What failed?** → `flux get all`
-    2. **What's the error?** → `kubectl describe` the failing resource
-    3. **What happened?** → `flux events --for <resource>`
-    4. **Why?** → Controller logs
-
-    This pattern works for every Flux resource type. Memorise it.
-
-### Task 4: Common Failure Scenarios
-
-Let's walk through the most common failures and how to identify them:
-
-**Scenario 1: Source fetch failure**
-
-```bash
-# Create a GitRepository pointing to a non-existent repo
-kubectl apply -f broken-source.yaml
-
-# Diagnose the failure
-flux get sources git
-kubectl describe gitrepository broken-source -n flux-system
-```
-
-```bash
-# Clean up
-kubectl delete gitrepository broken-source -n flux-system
-```
-
-**Scenario 2: Kustomization path not found**
-
-```bash
-# Create a Kustomization with an invalid path
-kubectl apply -f broken-path-kustomization.yaml
-
-# Diagnose the failure
-flux get kustomizations
-kubectl describe kustomization broken-path -n flux-system
-```
-
-```bash
-# Clean up
-kubectl delete kustomization broken-path -n flux-system
-```
-
-**Scenario 3: Invalid manifests**
-
-```bash
-# Create a Kustomization pointing to invalid YAML
-kubectl apply -f broken-manifests-kustomization.yaml
-
-# Diagnose the failure
-flux get kustomizations
-flux events --for kustomization/broken-manifests
-```
-
-```bash
-# Clean up
-kubectl delete kustomization broken-manifests -n flux-system
-```
-
-!!! info
-    In each scenario, the error message tells you exactly what went wrong. Flux doesn't hide failures - it reports them clearly through status conditions and events.
-
-### Task 5: Performing a GitOps Rollback
-
-In GitOps, rollback means reverting a commit in Git. Let's walk through this:
-
-First, deploy a working application:
-
-```bash
-# Deploy the application
-kubectl apply -f working-app-kustomization.yaml
-
-# Wait for it to be ready
 flux get kustomizations --watch
-
-# Verify the deployment
-kubectl get deployment rollback-demo -n rollback-demo
 ```
 
-Now let's simulate a bad change and roll back:
+You should see `apps-dev` go to `Ready: False`. Now use the four-step pattern:
+
+**Step 1: What failed?**
 
 ```bash
-# Make a "bad" change - update to a broken image
-cd working-app
-sed -i 's|nginx:1.25|nginx:nonexistent-tag|' deployment.yaml
-git add deployment.yaml
-git commit -m "feat: update to new image version"
-git push origin main
-
-# Wait for Flux to pick up the change
-flux reconcile source git flux-system
-flux reconcile kustomization working-app
-
-# Observe the failure
-kubectl get pods -n rollback-demo
-kubectl describe deployment rollback-demo -n rollback-demo
+flux get kustomizations
 ```
 
-Now roll back using Git:
+`apps-dev` shows `False`.
+
+**Step 2: What's the error?**
 
 ```bash
-# Revert the last commit
+kubectl describe kustomization apps-dev -n flux-system
+```
+
+Look at the `Status` section. It will tell you about the invalid patch target.
+
+**Step 3: What happened?**
+
+```bash
+flux events --for kustomization/apps-dev
+```
+
+You'll see the reconciliation failure event with the specific error.
+
+**Step 4: Why?**
+
+```bash
+kubectl logs -n flux-system deploy/kustomize-controller --tail=20
+```
+
+The controller logs show the full error. In production, this is where you'd find the root cause.
+
+!!! success "The pattern works"
+    Four commands. Every time. Status, describe, events, logs. This is how you debug a Flux-managed cluster. No guessing. No "have you tried restarting it?"
+
+---
+
+## Task 5: Fix it through Git
+
+On your **local machine**, revert the broken commit:
+
+```bash
 git revert HEAD --no-edit
-git push origin main
-
-# Trigger reconciliation
-flux reconcile source git flux-system
-flux reconcile kustomization working-app
-
-# Verify the rollback
-kubectl get pods -n rollback-demo
-kubectl get deployment rollback-demo -n rollback-demo -o jsonpath='{.spec.template.spec.containers[0].image}'
-echo ""
+git push
 ```
 
-!!! info
-    This is the GitOps rollback pattern:
-
-    1. `git revert` (not `git reset` - we want the history)
-    2. `git push`
-    3. Flux reconciles
-
-    The rollback is a Git commit with a clear audit trail. You can see who reverted, when, and why. Compare this to `kubectl rollout undo` where there's no audit trail and no guarantee the next reconciliation won't re-apply the broken state.
-
-### Task 6: Flux Suspend and Resume
-
-Sometimes you need to pause reconciliation temporarily - for example, during a maintenance window:
+On your **bastion node**, watch the fix apply:
 
 ```bash
-# Suspend a Kustomization
-flux suspend kustomization working-app
-
-# Verify it's suspended
-flux get kustomizations
-
-# Make a change that would normally be reconciled
-kubectl scale deployment rollback-demo -n rollback-demo --replicas=5
-
-# Verify the change sticks (Flux isn't reconciling)
-kubectl get deployment rollback-demo -n rollback-demo
-```
-
-Resume reconciliation:
-
-```bash
-# Resume the Kustomization
-flux resume kustomization working-app
-
-# Watch Flux correct the drift
 flux get kustomizations --watch
-
-# Verify the replica count was restored
-kubectl get deployment rollback-demo -n rollback-demo
 ```
 
-!!! tip
-    Suspend/resume is useful for:
+`apps-dev` should go back to `Ready: True`. You fixed a broken deployment without touching kubectl. The fix is in the Git history. The rollback is auditable.
 
-    - Maintenance windows where you need to make manual changes
-    - Debugging reconciliation loops
-    - Pausing a deployment while investigating an issue
+!!! warning "Never use kubectl rollout undo"
+    In a GitOps workflow, `kubectl rollout undo` gets immediately overwritten by Flux. The reconciliation loop re-applies the state from Git. If you undo in the cluster but don't fix Git, the broken state comes back. Always fix through Git.
 
-    Always remember to resume when you're done.
+---
 
-### Task 7: Cleanup
+## Task 6: Suspend and resume
 
-Clean up all resources from this lab:
+Sometimes you need to pause Flux. Maintenance windows. Debugging. Manual testing.
+
+On your **bastion node**, suspend the dev kustomization:
 
 ```bash
-# Delete all lab resources
-kubectl delete kustomization working-app broken-app -n flux-system --ignore-not-found
-kubectl delete alert on-call-alert -n flux-system --ignore-not-found
-kubectl delete provider github-status -n flux-system --ignore-not-found
-
-# Verify cleanup
-flux get all
+flux suspend kustomization apps-dev
 ```
 
-## Lab Validation
+Verify it's suspended:
 
-Let's confirm you've mastered the key concepts from this lab:
+```bash
+flux get kustomizations
+```
 
-- You can monitor Flux health using `flux get all` and controller logs
-- You can set up notifications and alerts for Flux events
-- You know the four-step troubleshooting pattern (status, describe, events, logs)
-- You can perform rollbacks using `git revert`
-- You understand when and how to use `flux suspend` and `flux resume`
+`apps-dev` should show `Suspended: True`.
 
-## Summary
+Now make a change on your **local machine**. Edit `apps/podinfo/overlays/dev/kustomization.yaml` and change replicas to 5:
 
-Congratulations! You have completed Lab 6 of the GitOps Fundamentals Workshop. In this lab, you've learned:
+```yaml
+patches:
+  - target:
+      kind: Deployment
+      name: podinfo
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 5
+```
 
-1. How to monitor Flux health and reconciliation status
-2. How to set up notifications for failed reconciliations
-3. The four-step troubleshooting pattern that works for every failure
-4. How to perform rollbacks the GitOps way (git revert, not kubectl rollout undo)
-5. How to suspend and resume reconciliation for maintenance windows
+Commit and push:
 
-These are the patterns from 50+ platform rescues. They work because they're simple, repeatable, and don't require you to remember which magic kubectl command to run at 6 PM on a Friday.
+```bash
+git add -A
+git commit -m "Scale dev to 5 replicas (Flux is suspended)"
+git push
+```
 
-## What's Next?
+On your **bastion node**, check dev pods:
 
-You've completed all the hands-on labs! Head back for the **Ask Me Anything** session where we'll discuss:
+```bash
+kubectl get pods -n dev
+```
 
-- Your specific challenges and migration strategy
-- Your "but we're different because..." scenarios
-- Your 30-day adoption roadmap
+Still 1 replica. Flux is suspended. The change is in Git but not applied.
 
-No question is too awkward. This is the session that makes the workshop stick.
+Now resume:
+
+```bash
+flux resume kustomization apps-dev
+```
+
+Wait a moment, then check:
+
+```bash
+kubectl get pods -n dev
+```
+
+5 replicas. The change in Git was applied the moment Flux resumed. Suspend pauses reconciliation. Resume catches up.
+
+---
+
+## Task 7: Force a reconciliation
+
+Sometimes you don't want to wait for the interval. On your **bastion node**:
+
+```bash
+flux reconcile kustomization apps-dev
+```
+
+This triggers an immediate reconciliation, regardless of the interval timer. Useful after pushing a fix and wanting to see it applied now.
+
+---
+
+## Validation
+
+Confirm all of the following before moving on:
+
+- [ ] You can run the four-step troubleshooting pattern from memory
+- [ ] You broke a deployment, diagnosed it with Flux commands, and fixed it via `git revert`
+- [ ] You suspended and resumed a kustomization
+- [ ] You forced a manual reconciliation
+- [ ] `flux get all` shows everything as `Ready: True`
+
+---
+
+## What you learned
+
+| Situation | Command |
+|-----------|---------|
+| What's the overall health? | `flux get all` |
+| Is Flux itself healthy? | `flux check` |
+| What failed? | `flux get kustomizations` |
+| What's the error? | `kubectl describe kustomization <name> -n flux-system` |
+| What happened? | `flux events --for kustomization/<name>` |
+| Why? | `kubectl logs -n flux-system deploy/kustomize-controller` |
+| Pause Flux | `flux suspend kustomization <name>` |
+| Resume Flux | `flux resume kustomization <name>` |
+| Apply now | `flux reconcile kustomization <name>` |
+| Rollback | `git revert HEAD --no-edit && git push` |
+
+These are the commands you'll use every day. Print this table. Stick it on your monitor. In a month it'll be muscle memory.
+
+!!! quote "Think about your current setup"
+    What was the last deployment incident your team had? How long did it take to diagnose? How many people were involved? How was it resolved? With the four-step pattern and Git-based rollback, most issues are diagnosed in 2 minutes and fixed in 1 commit.
+
+[Next: Flux MCP Server Demo](flux-mcp-demo.md){ .md-button .md-button--primary }

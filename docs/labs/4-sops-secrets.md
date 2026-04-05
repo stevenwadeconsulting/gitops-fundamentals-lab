@@ -1,269 +1,328 @@
-# Lab 5: Secret Management with SOPS
+# Lab 4: Secret Management with SOPS
 
-## Introduction
+Encrypt secrets in Git. Commit them safely. Watch Flux decrypt and apply them automatically. No more secrets in Slack.
 
-"Just put the secret in Slack." We've all heard it. We've all done it. And it's a problem.
+**Duration:** 40 minutes
 
-If Git is your single source of truth, you need secrets in Git too - but obviously not in plain text. Mozilla SOPS (Secrets OPerationS) solves this by encrypting secrets at rest in your repository while keeping them decryptable only by your cluster.
-
-In this lab, you'll encrypt Kubernetes Secrets with SOPS using age encryption, commit them to Git, and watch Flux decrypt and apply them automatically.
+---
 
 ## Objectives
 
-By the end of this lab, you will be able to:
+By the end of this lab, you will:
 
-- Understand why SOPS is the recommended approach for GitOps secret management
-- Encrypt Kubernetes Secrets using SOPS and age
-- Configure Flux to decrypt SOPS-encrypted secrets
-- Deploy applications that consume encrypted secrets
-- Rotate encryption keys
+- Generate an age encryption key pair
+- Encrypt a Kubernetes Secret with SOPS
+- Configure Flux to decrypt SOPS-encrypted secrets automatically
+- Deploy an application that consumes an encrypted secret
+- Understand why this is safer than every alternative your team is currently using
+
+---
 
 ## Prerequisites
 
-- Completion of [Lab 4: Image Update Automation](4-image-automation.md)
-- Understanding of Kubernetes Secrets
+- [x] Completed [Lab 3: Helm Integration](3-helm-integration.md)
+- [x] Flux is managing both raw YAML and Helm deployments
 
-!!! warning
-    Execute `cd ../005-sops-secrets` to navigate to this lab directory
+---
 
-## Lab Tasks
+## The Problem
 
-### Task 1: Understanding SOPS and Age
+Secrets have to live somewhere. Right now, on most teams, they live in:
 
-SOPS encrypts the **values** in a YAML file while leaving the **keys** in plain text. This means you can still see the structure of a Secret in Git, but the sensitive data is encrypted.
+- Slack messages ("can you send me the DB password?")
+- Shared 1Password vaults (better, but not in Git)
+- Environment variables set manually on the cluster
+- Unencrypted YAML committed to Git (please no)
 
-Age is a modern encryption tool that SOPS supports. It's simpler than PGP and purpose-built for file encryption.
+None of these are GitOps. If Git is the source of truth for everything else, secrets should be in Git too. But they need to be encrypted.
+
+SOPS (Secrets OPerationS) encrypts the values of a Kubernetes Secret while leaving the keys and structure visible. You can see what secrets exist and what keys they contain, but the actual values are encrypted. Flux decrypts them automatically before applying to the cluster.
+
+---
+
+## Task 1: Generate an age key pair
+
+On your **bastion node**, generate an encryption key:
 
 ```bash
-# Verify SOPS is installed
-sops --version
-
-# Verify age is installed
-age --version
+age-keygen -o age-key.txt
 ```
 
-Let's see how SOPS works by examining a pre-encrypted secret:
+This creates a file with both the public and private key. Display the public key:
 
 ```bash
-# View the encrypted secret
-cat encrypted-secret.yaml
+grep "public key" age-key.txt
 ```
 
-!!! info
-    Notice how the YAML structure is visible (apiVersion, kind, metadata, data keys) but the values are encrypted. The `sops` metadata at the bottom of the file contains the encryption details - which key was used, when it was encrypted, and the MAC (message authentication code) to detect tampering.
+Copy the public key (starts with `age1...`). You'll need it in Task 3.
 
-### Task 2: Creating an Age Key Pair
+!!! warning "The private key stays on the cluster"
+    The private key in `age-key.txt` is what Flux uses to decrypt. It never goes in Git. The public key is what you use to encrypt. It can be shared freely.
 
-Let's create an age key pair for encryption:
+---
+
+## Task 2: Create the decryption secret for Flux
+
+On your **bastion node**, create a Kubernetes Secret from the age key so Flux can decrypt:
 
 ```bash
-# Generate a new age key pair
-age-keygen -o age.key
-
-# View the public key (you'll need this for encryption)
-cat age.key | grep "public key"
+cat age-key.txt | kubectl create secret generic sops-age \
+  --namespace=flux-system \
+  --from-file=age.agekey=/dev/stdin
 ```
 
-!!! warning
-    In production, the age private key would be securely stored and distributed to your cluster. Never commit the private key to Git. For this workshop, the key is pre-configured on your cluster.
-
-Now let's make the private key available to Flux. In your workshop environment, this has already been done, but let's understand the process:
+Verify:
 
 ```bash
-# This is how you'd create the secret for Flux (already done for you)
-# kubectl create secret generic sops-age \
-#   --namespace=flux-system \
-#   --from-file=age.agekey=age.key
-
-# Verify the secret exists
 kubectl get secret sops-age -n flux-system
 ```
 
-### Task 3: Encrypting a Secret with SOPS
+---
 
-Let's create and encrypt a new Kubernetes Secret:
+## Task 3: Create a SOPS configuration file
 
-```bash
-# View the plain-text secret we want to encrypt
-cat plain-secret.yaml
-```
+On your **local machine**, create `.sops.yaml` in the root of your repository:
 
 ```yaml
-# plain-secret.yaml
+creation_rules:
+  - path_regex: .*\.encrypted\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    age: YOUR_AGE_PUBLIC_KEY
+```
+
+Replace `YOUR_AGE_PUBLIC_KEY` with the public key from Task 1 (the `age1...` string).
+
+!!! info "What does this do?"
+    This tells SOPS: for any file ending in `.encrypted.yaml`, only encrypt the `data` and `stringData` fields. The metadata (name, namespace, labels) stays readable. You can see what secrets exist in Git without being able to read the values.
+
+---
+
+## Task 4: Create a plain secret
+
+On your **local machine**, create the file `apps/podinfo-helm/secret.yaml`:
+
+```yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: app-credentials
-  namespace: sops-demo
+  name: podinfo-secrets
+  namespace: production
 type: Opaque
 stringData:
-  database-url: "postgresql://admin:supersecret@db.example.com:5432/myapp"
-  api-key: "sk-live-abc123def456ghi789"
+  API_KEY: "my-super-secret-api-key-12345"
+  DB_PASSWORD: "production-database-password"
 ```
 
-Now encrypt it:
+---
+
+## Task 5: Encrypt the secret with SOPS
+
+On your **bastion node**, encrypt the secret. First, set the age recipient:
 
 ```bash
-# Get the age public key
-export AGE_PUBLIC_KEY=$(cat age.key | grep "public key" | awk '{print $NF}')
-
-# Encrypt the secret with SOPS
-sops --age=$AGE_PUBLIC_KEY \
-  --encrypt \
-  --encrypted-regex '^(data|stringData)$' \
-  plain-secret.yaml > encrypted-app-secret.yaml
-
-# View the encrypted result
-cat encrypted-app-secret.yaml
+export SOPS_AGE_RECIPIENTS="YOUR_AGE_PUBLIC_KEY"
 ```
 
-!!! info
-    The `--encrypted-regex '^(data|stringData)$'` flag tells SOPS to only encrypt the `data` and `stringData` fields. This keeps the rest of the manifest (apiVersion, kind, metadata) readable in Git while protecting the sensitive values.
-
-Let's verify we can decrypt it:
+Clone your repo on the bastion temporarily:
 
 ```bash
-# Decrypt the secret (using the private key)
-export SOPS_AGE_KEY_FILE=age.key
-sops --decrypt encrypted-app-secret.yaml
+git clone https://github.com/platformfix/gitops-workshop-YOUR_USERNAME /tmp/workshop
+cd /tmp/workshop
 ```
 
-### Task 4: Configuring Flux for SOPS Decryption
-
-To have Flux automatically decrypt SOPS-encrypted secrets, we need to configure the Kustomization with decryption settings:
+Pull the latest changes (including the `.sops.yaml` and plain secret):
 
 ```bash
-# View the Kustomization with SOPS decryption
-cat flux-kustomization.yaml
+git pull
 ```
+
+Encrypt the secret:
+
+```bash
+sops --encrypt --encrypted-regex '^(data|stringData)$' \
+  apps/podinfo-helm/secret.yaml > apps/podinfo-helm/secret.encrypted.yaml
+```
+
+View the encrypted file:
+
+```bash
+cat apps/podinfo-helm/secret.encrypted.yaml
+```
+
+!!! success "The aha moment"
+    Look at the output. The `metadata` section (name, namespace) is in plain text. You can see this is a secret called `podinfo-secrets` in the `production` namespace. But the `stringData` values are encrypted. You know what secrets exist. You can't read the values. This is safe to commit to Git.
+
+Remove the plain secret and push:
+
+```bash
+rm apps/podinfo-helm/secret.yaml
+git add -A
+git commit -m "Add SOPS-encrypted secret for podinfo"
+git push
+```
+
+Pull the changes on your **local machine**:
+
+```bash
+git pull
+```
+
+---
+
+## Task 6: Configure Flux to decrypt SOPS secrets
+
+On your **local machine**, update the Helm Kustomization to enable SOPS decryption. Edit `clusters/apps-podinfo-helm.yaml` and add the `decryption` block:
 
 ```yaml
-# flux-kustomization.yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: sops-demo
+  name: apps-podinfo-helm
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./examples/005-sops-secrets/app
+  dependsOn:
+    - name: infrastructure
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
+  path: ./apps/podinfo-helm
+  wait: true
+  timeout: 5m
   decryption:
     provider: sops
     secretRef:
       name: sops-age
-  wait: true
-  timeout: 2m
 ```
 
-!!! info
-    The `decryption` block tells the kustomize-controller to use SOPS for decryption and to use the `sops-age` Secret for the decryption key. When Flux encounters an encrypted file, it automatically decrypts it before applying to the cluster.
-
-Apply the Kustomization:
+Commit and push:
 
 ```bash
-kubectl apply -f flux-kustomization.yaml
+git add -A
+git commit -m "Enable SOPS decryption for podinfo-helm Kustomization"
+git push
+```
 
-# Watch the reconciliation
+---
+
+## Task 7: Verify the secret was decrypted and applied
+
+On your **bastion node**, wait for Flux to reconcile:
+
+```bash
 flux get kustomizations --watch
 ```
 
-### Task 5: Verifying the Decrypted Secret
-
-Let's verify that Flux decrypted and applied the secret correctly:
+Once `apps-podinfo-helm` shows `Ready: True`:
 
 ```bash
-# Check the secret exists in the target namespace
-kubectl get secret app-credentials -n sops-demo
-
-# Verify the secret contains the decrypted values
-kubectl get secret app-credentials -n sops-demo -o jsonpath='{.data.database-url}' | base64 -d
-echo ""
-kubectl get secret app-credentials -n sops-demo -o jsonpath='{.data.api-key}' | base64 -d
-echo ""
+kubectl get secret podinfo-secrets -n production
 ```
 
-!!! tip
-    The secret is stored encrypted in Git but decrypted in the cluster. If someone gains access to your Git repository, they can see the secret structure but not the values. If someone gains access to your cluster, they can see the decrypted values - but that's the same as with any Kubernetes Secret.
-
-### Task 6: Deploying an Application That Uses the Secret
-
-Let's deploy an application that consumes the encrypted secret:
+Verify the decrypted value:
 
 ```bash
-# View the application deployment
-cat app/deployment.yaml
-
-# Check the deployed application
-kubectl get all -n sops-demo
-
-# Verify the application can access the secret
-POD_NAME=$(kubectl get pods -n sops-demo -l app=sops-demo -o jsonpath='{.items[0].metadata.name}')
-kubectl exec -it $POD_NAME -n sops-demo -- env | grep -E 'DATABASE_URL|API_KEY'
+kubectl get secret podinfo-secrets -n production -o jsonpath='{.data.API_KEY}' | base64 -d
 ```
 
-### Task 7: Updating an Encrypted Secret
+You should see `my-super-secret-api-key-12345`. Encrypted in Git. Decrypted by Flux. Applied to the cluster.
 
-To update an encrypted secret, you decrypt it, make changes, and re-encrypt:
+---
+
+## Task 8: Update the HelmRelease to use the secret
+
+On your **local machine**, edit `apps/podinfo-helm/production.yaml` to mount the secret:
+
+```yaml
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: podinfo
+  namespace: production
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: podinfo
+      version: ">=6.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: podinfo
+        namespace: flux-system
+  values:
+    replicaCount: 3
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    ui:
+      message: "Hello from production (Helm + SOPS)"
+    extraEnvFrom:
+      - secretRef:
+          name: podinfo-secrets
+```
+
+Commit and push:
 
 ```bash
-# Decrypt, edit, and re-encrypt in one step
-export SOPS_AGE_KEY_FILE=age.key
-sops encrypted-app-secret.yaml
+git add -A
+git commit -m "Mount encrypted secrets into podinfo HelmRelease"
+git push
 ```
 
-This opens the file in your editor with decrypted values. After saving, SOPS automatically re-encrypts the file.
+---
 
-Alternatively, you can use the command-line approach:
+## Task 9: Verify the application has the secrets
+
+On your **bastion node**, once Flux reconciles:
 
 ```bash
-# Decrypt to a temp file, edit, re-encrypt
-sops --decrypt encrypted-app-secret.yaml > /tmp/secret.yaml
-# Edit /tmp/secret.yaml
-sops --age=$AGE_PUBLIC_KEY \
-  --encrypt \
-  --encrypted-regex '^(data|stringData)$' \
-  /tmp/secret.yaml > encrypted-app-secret.yaml
-rm /tmp/secret.yaml
+kubectl exec -n production deploy/podinfo -- env | grep -E "API_KEY|DB_PASSWORD"
 ```
 
-### Task 8: Cleanup
+Both environment variables should show their decrypted values. The secrets went from an encrypted file in Git to environment variables in a running pod. No human touched the cluster.
 
-Before moving to the next lab, clean up the SOPS resources:
+---
 
-```bash
-# Delete the Kustomization
-kubectl delete kustomization sops-demo -n flux-system
+## Validation
 
-# Verify resources are cleaned up
-kubectl get all -n sops-demo
-kubectl get secret app-credentials -n sops-demo
-flux get kustomizations
+Confirm all of the following before moving on:
+
+- [ ] `sops-age` secret exists in `flux-system` namespace
+- [ ] `.sops.yaml` exists in the root of your repo
+- [ ] `secret.encrypted.yaml` exists in `apps/podinfo-helm/` with encrypted values
+- [ ] No plain text `secret.yaml` exists in Git
+- [ ] `kubectl get secret podinfo-secrets -n production` returns the secret
+- [ ] Decrypted values are accessible inside the podinfo pod
+
+---
+
+## What you built
+
+```
+your-repo/
+├── .sops.yaml                        <-- NEW: encryption rules
+├── clusters/
+│   ├── ...
+│   └── apps-podinfo-helm.yaml        <-- UPDATED: decryption block
+├── apps/
+│   ├── podinfo/
+│   └── podinfo-helm/
+│       ├── kustomization.yaml
+│       ├── production.yaml            <-- UPDATED: extraEnvFrom
+│       └── secret.encrypted.yaml      <-- NEW: encrypted, safe in Git
+├── infrastructure/
+│   └── sources/
+└── ...
 ```
 
-## Lab Validation
+Secrets in Git. Encrypted at rest. Decrypted by Flux. Version controlled. Auditable. No more Slack messages with passwords.
 
-Let's confirm you've mastered the key concepts from this lab:
+!!! quote "Think about your current setup"
+    Where do your secrets live right now? Be honest. How many people have access? How do you rotate them? How do you audit who changed what? SOPS gives you version history, access control via Git, and encryption at rest. For free.
 
-- You understand how SOPS encrypts values while keeping keys readable
-- You can encrypt and decrypt Kubernetes Secrets using SOPS and age
-- You can configure Flux Kustomizations for SOPS decryption
-- You understand the workflow for updating encrypted secrets
-
-## Summary
-
-Congratulations! You have completed Lab 5 of the GitOps Fundamentals Workshop. In this lab, you've learned:
-
-1. How SOPS encrypts YAML values while keeping structure visible
-2. How to use age encryption with SOPS for secret management
-3. How to configure Flux to automatically decrypt SOPS-encrypted secrets
-4. The workflow for creating, updating, and managing encrypted secrets in Git
-
-No more secrets in Slack. No more "can you send me the database password?" in chat. Secrets live in Git, encrypted at rest, and only your cluster can decrypt them.
-
-## Next Steps
-
-Proceed to [Lab 6: Monitoring & Troubleshooting](6-monitoring-troubleshooting.md) to learn how to monitor your GitOps pipeline and troubleshoot when things go wrong.
+[Next: Lab 5 - Monitoring and Troubleshooting](5-monitoring-troubleshooting.md){ .md-button .md-button--primary }
