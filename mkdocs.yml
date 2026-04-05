@@ -13,6 +13,7 @@ nav:
   - Agenda: agenda.md
   - Environment: access.md
   - Labs:
+      - 0. Flux Operator Bootstrap: labs/0-bootstrap.md
       - 1. Your First GitOps Pipeline: labs/1-first-pipeline.md
       - 2. Multi-Environment Mastery: labs/2-multi-environment.md
       - 3. Helm Integration: labs/3-helm-integration.md
