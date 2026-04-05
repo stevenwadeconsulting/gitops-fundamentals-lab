@@ -28,6 +28,26 @@ Before starting, make sure you have:
 
 ---
 
+## How Flux Self-Management Works
+
+```mermaid
+graph TD
+    A[You push FluxInstance YAML to Git] --> B[Git Repository]
+    B -->|Flux watches| C[Flux Source Controller]
+    C -->|detects change| D[Flux Kustomize Controller]
+    D -->|applies| E[FluxInstance on Cluster]
+    E -->|Flux Operator reconciles| F[Flux Controllers Updated]
+    F -->|continue watching| B
+
+    style A fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style B fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style E fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+```
+
+Flux watches the repo that contains Flux's own configuration. Change the config in Git. Flux updates itself. GitOps all the way down.
+
+---
+
 ## Task 1: Install the Flux Operator
 
 On your **bastion node**, install the Flux Operator onto your cluster:

@@ -17,6 +17,25 @@ By the end of this lab, you will:
 
 ---
 
+## The GitOps Reconciliation Loop
+
+```mermaid
+graph LR
+    A[You push YAML to Git] --> B[Git Repository]
+    B -->|Flux polls| C[Source Controller]
+    C -->|new commit detected| D[Kustomize Controller]
+    D -->|applies to cluster| E[Kubernetes]
+    E -->|drift detected| D
+
+    style A fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style B fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style E fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+```
+
+You push to Git. Flux detects the change. Flux applies it to the cluster. If something drifts (manual change, restart, scaling), Flux corrects it. Git always wins.
+
+---
+
 ## Prerequisites
 
 - [x] Completed [Lab 0: Flux Operator Bootstrap](0-bootstrap.md)

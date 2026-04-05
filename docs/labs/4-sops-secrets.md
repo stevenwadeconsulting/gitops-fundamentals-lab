@@ -49,6 +49,26 @@ cat apps/podinfo-helm/secret.encrypted.yaml
 
 ---
 
+## How SOPS + Flux Works
+
+```mermaid
+graph LR
+    A[Developer] -->|encrypts with public key| B[Encrypted Secret in Git]
+    B -->|push| C[Git Repository]
+    C -->|watches| D[Flux Kustomize Controller]
+    D -->|reads private key from| E[sops-age K8s Secret]
+    D -->|decrypts and applies| F[Plain K8s Secret on Cluster]
+    F -->|mounted into| G[Running Pod]
+
+    style B fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style E fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style F fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+```
+
+The public key encrypts. The private key decrypts. Git only ever sees the encrypted version. The cluster only ever sees the decrypted version. Flux is the bridge.
+
+---
+
 ## Task 1: Create the decryption secret for Flux
 
 Flux needs the age private key to decrypt. On your **bastion node**:
