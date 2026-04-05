@@ -1,386 +1,322 @@
 # Lab 3: Helm Integration
 
-## Introduction
+Replace raw YAML with a Helm chart managed by Flux. Same application. Proper packaging. Values, upgrades, and rollback built in.
 
-Many teams already use Helm charts for packaging applications. The good news: you don't have to choose between Helm and GitOps. Flux integrates natively with Helm, letting you declare your Helm releases in Git and have Flux manage the full lifecycle - install, upgrade, rollback, and uninstall.
+**Duration:** 40 minutes
 
-In this lab, you'll learn how to use HelmRepository and HelmRelease resources to deploy applications from public and private Helm chart repositories.
+---
 
 ## Objectives
 
-By the end of this lab, you will be able to:
+By the end of this lab, you will:
 
-- Create HelmRepository sources pointing to chart repositories
-- Deploy applications using HelmRelease resources
-- Override Helm values through GitOps
-- Upgrade and roll back Helm releases through Git commits
-- Understand how Flux manages the Helm release lifecycle
+- Add a HelmRepository source to Flux
+- Deploy an application using a HelmRelease
+- Override Helm values through Git
+- Upgrade a Helm release by changing one line in Git
+- Understand why Helm + GitOps is better than either alone
+
+---
 
 ## Prerequisites
 
-- Completion of [Lab 2: Multi-Environment Mastery](2-multi-environment.md)
-- Basic familiarity with Helm concepts (charts, values, releases)
+- [x] Completed [Lab 2: Multi-Environment Mastery](2-multi-environment.md)
+- [x] podinfo running in dev, staging, and production namespaces
 
-!!! warning
-    Execute `cd ../003-helm-integration` to navigate to this lab directory
+---
 
-## Lab Tasks
+## The Journey So Far
 
-### Task 1: Creating a HelmRepository Source
+In Lab 1, you wrote raw deployment and service YAML. In Lab 2, you structured it with Kustomize overlays. Both work. But in production, most teams use Helm charts: pre-packaged application definitions with configurable values.
 
-Let's start by adding a HelmRepository source. We'll use the Bitnami charts repository:
+The problem with Helm alone: someone runs `helm install` or `helm upgrade` from their laptop. The cluster changes. Git doesn't know about it. You're back to "what's actually running?"
 
-```bash
-# View the HelmRepository manifest
-cat helm-repository.yaml
-```
+The fix: Flux manages Helm. You define a `HelmRelease` in Git. Flux installs, upgrades, and rolls back the chart. Git stays the source of truth. Nobody runs `helm install` manually.
+
+---
+
+## Task 1: Add the HelmRepository
+
+On your **local machine**, create the infrastructure directory for shared Helm sources.
+
+Create `infrastructure/sources/kustomization.yaml`:
 
 ```yaml
-# helm-repository.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - podinfo.yaml
+```
+
+Create `infrastructure/sources/podinfo.yaml`:
+
+```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: bitnami
+  name: podinfo
   namespace: flux-system
 spec:
-  interval: 1h
-  url: https://charts.bitnami.com/bitnami
+  interval: 60m
+  url: https://stefanprodan.github.io/podinfo
 ```
 
-Apply the HelmRepository:
+!!! info "What is a HelmRepository?"
+    A HelmRepository tells Flux where to find Helm charts. It's like adding a repo with `helm repo add`, but declarative and managed by Git. Flux polls the repo index at the specified interval to discover new chart versions.
 
-```bash
-kubectl apply -f helm-repository.yaml
-```
+---
 
-Verify the repository is ready:
+## Task 2: Tell Flux to manage infrastructure
 
-```bash
-# Check the source status
-flux get sources helm
-
-# Wait for the repository index to be fetched
-kubectl wait helmrepository/bitnami -n flux-system --for=condition=ready --timeout=60s
-```
-
-!!! info
-    The `interval: 1h` field tells Flux to refresh the Helm repository index every hour. This is how Flux discovers new chart versions without you having to do anything.
-
-### Task 2: Deploying a Helm Chart with HelmRelease
-
-Now let's deploy Redis using a HelmRelease. Examine the manifest:
-
-```bash
-# View the HelmRelease manifest
-cat redis-release.yaml
-```
+Create `clusters/infrastructure.yaml`:
 
 ```yaml
-# redis-release.yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
 metadata:
-  name: redis
+  name: infrastructure
   namespace: flux-system
 spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: redis
-      version: ">=19.0.0 <20.0.0"
-      sourceRef:
-        kind: HelmRepository
-        name: bitnami
-      interval: 1h
-  targetNamespace: redis
-  install:
-    createNamespace: true
-  values:
-    architecture: standalone
-    auth:
-      enabled: false
-    master:
-      persistence:
-        enabled: false
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 250m
-          memory: 256Mi
+  interval: 10m
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/sources
+  wait: true
+  timeout: 2m
 ```
 
-Apply the HelmRelease:
+!!! info "Why a separate Kustomization?"
+    Infrastructure (HelmRepositories, namespaces, shared resources) lives separately from applications. This way, the HelmRepository is available before any HelmRelease tries to use it. Order matters.
 
-```bash
-kubectl apply -f redis-release.yaml
-```
+---
 
-Watch the deployment:
+## Task 3: Create a HelmRelease for production
 
-```bash
-# Watch the HelmRelease status
-flux get helmreleases --watch
-
-# Once ready, check the deployed resources
-kubectl get all -n redis
-```
-
-!!! info
-    Key fields in the HelmRelease:
-
-    - `chart.spec.version`: Uses a semver range so Flux can auto-upgrade within safe bounds
-    - `targetNamespace`: Where the chart resources are deployed
-    - `install.createNamespace`: Automatically creates the namespace if it doesn't exist
-    - `values`: Inline Helm values that override chart defaults
-
-### Task 3: Exploring the Helm Release
-
-Let's examine what Flux created:
-
-```bash
-# View the Helm release details
-flux get helmreleases
-
-# Check the actual Helm release
-helm list -n redis
-
-# View the Helm release history
-helm history redis -n redis
-```
-
-!!! note
-    Flux manages the Helm release through its own controller - you don't need to run `helm install` or `helm upgrade` manually. The HelmRelease custom resource is the declaration, and Flux handles the imperative Helm commands behind the scenes.
-
-### Task 4: Updating Helm Values Through Git
-
-Let's update the Redis configuration by changing the values in our HelmRelease. We'll enable authentication:
-
-```bash
-# Create an updated HelmRelease with auth enabled
-cat > redis-release-updated.yaml << 'EOF'
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: redis
-  namespace: flux-system
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: redis
-      version: ">=19.0.0 <20.0.0"
-      sourceRef:
-        kind: HelmRepository
-        name: bitnami
-      interval: 1h
-  targetNamespace: redis
-  install:
-    createNamespace: true
-  values:
-    architecture: standalone
-    auth:
-      enabled: true
-      password: workshop-redis-pass
-    master:
-      persistence:
-        enabled: false
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 250m
-          memory: 256Mi
-EOF
-
-# Apply the updated release
-kubectl apply -f redis-release-updated.yaml
-```
-
-Watch the upgrade:
-
-```bash
-# Watch the HelmRelease reconcile
-flux get helmreleases --watch
-
-# Check the Helm release history
-helm history redis -n redis
-```
-
-!!! tip
-    In a production GitOps workflow, this values change would be a Git commit. The pattern is the same as what we learned in Lab 1 - change the manifest in Git, and Flux reconciles the cluster.
-
-### Task 5: Using ValuesFrom for External Configuration
-
-Flux can also pull Helm values from ConfigMaps or Secrets. This is useful when you want to separate sensitive values from the HelmRelease manifest:
-
-```bash
-# Create a ConfigMap with Helm values
-cat > redis-values-configmap.yaml << 'EOF'
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: redis-values
-  namespace: flux-system
-data:
-  values.yaml: |
-    master:
-      resources:
-        requests:
-          cpu: 200m
-          memory: 256Mi
-        limits:
-          cpu: 500m
-          memory: 512Mi
-EOF
-
-kubectl apply -f redis-values-configmap.yaml
-```
-
-Now examine how to reference this ConfigMap in a HelmRelease:
-
-```bash
-# View the HelmRelease with valuesFrom
-cat redis-release-with-valuesFrom.yaml
-```
+Now deploy podinfo using Helm instead of raw YAML. On your **local machine**, create `apps/podinfo-helm/production.yaml`:
 
 ```yaml
-# redis-release-with-valuesFrom.yaml (reference only - don't apply)
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: redis
-  namespace: flux-system
+  name: podinfo
+  namespace: production
 spec:
   interval: 5m
   chart:
     spec:
-      chart: redis
-      version: ">=19.0.0 <20.0.0"
+      chart: podinfo
+      version: ">=6.0.0"
       sourceRef:
         kind: HelmRepository
-        name: bitnami
-      interval: 1h
-  targetNamespace: redis
-  install:
-    createNamespace: true
+        name: podinfo
+        namespace: flux-system
   values:
-    architecture: standalone
-    auth:
-      enabled: false
-  valuesFrom:
-    - kind: ConfigMap
-      name: redis-values
-      valuesKey: values.yaml
+    replicaCount: 3
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    ui:
+      message: "Hello from production (Helm)"
 ```
 
-!!! info
-    `valuesFrom` values are merged with inline `values`, with `valuesFrom` taking precedence. This pattern is useful for:
+Create `apps/podinfo-helm/kustomization.yaml`:
 
-    - Separating environment-specific values into ConfigMaps
-    - Storing sensitive values in Secrets
-    - Sharing common values across multiple HelmReleases
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - production.yaml
+```
 
-### Task 6: Handling Helm Release Failures
+---
 
-Let's see what happens when a HelmRelease fails. We'll intentionally deploy with invalid values:
+## Task 4: Add a Flux Kustomization for the Helm-based app
 
-```bash
-# Create a HelmRelease with invalid values
-cat > redis-bad-release.yaml << 'EOF'
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+Create `clusters/apps-podinfo-helm.yaml`:
+
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
 metadata:
-  name: redis-bad
+  name: apps-podinfo-helm
   namespace: flux-system
 spec:
   interval: 5m
-  chart:
-    spec:
-      chart: redis
-      version: ">=19.0.0 <20.0.0"
-      sourceRef:
-        kind: HelmRepository
-        name: bitnami
-      interval: 1h
-  targetNamespace: redis-bad
-  install:
-    createNamespace: true
-    remediation:
-      retries: 3
+  dependsOn:
+    - name: infrastructure
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/podinfo-helm
+  wait: true
+  timeout: 5m
+```
+
+!!! info "dependsOn"
+    The `dependsOn: infrastructure` ensures the HelmRepository exists before Flux tries to install the HelmRelease. Without this, Flux would fail because it can't find the chart source.
+
+---
+
+## Task 5: Push and watch Helm in action
+
+Your repo should now look like this:
+
+```
+your-repo/
+├── clusters/
+│   ├── flux-instance.yaml
+│   ├── infrastructure.yaml        <-- NEW: manages shared infra
+│   ├── apps-dev.yaml
+│   ├── apps-staging.yaml
+│   ├── apps-production.yaml
+│   └── apps-podinfo-helm.yaml     <-- NEW: Helm-based podinfo
+├── apps/
+│   ├── podinfo/                   <-- Lab 1 & 2 (raw YAML + overlays)
+│   └── podinfo-helm/              <-- NEW (Helm-managed)
+│       ├── kustomization.yaml
+│       └── production.yaml
+├── infrastructure/
+│   └── sources/                   <-- NEW
+│       ├── kustomization.yaml
+│       └── podinfo.yaml
+└── ...
+```
+
+Commit and push:
+
+```bash
+git add -A
+git commit -m "Add Helm-managed podinfo alongside raw YAML version"
+git push
+```
+
+On your **bastion node**, watch the infrastructure and Helm release deploy:
+
+```bash
+flux get kustomizations --watch
+```
+
+Once `infrastructure` and `apps-podinfo-helm` show `Ready: True`, check the Helm release:
+
+```bash
+flux get helmreleases -A
+```
+
+You should see the podinfo HelmRelease in the `production` namespace with status `Ready`.
+
+Verify on the cluster:
+
+```bash
+kubectl get pods -n production
+```
+
+You'll now see two sets of podinfo pods: the raw YAML version from Lab 2 and the Helm-managed version. Both deployed by Flux. Both managed through Git.
+
+---
+
+## Task 6: Explore the Helm release
+
+On your **bastion node**, see how Flux manages Helm under the hood:
+
+```bash
+helm list -n production
+```
+
+You'll see the release that Flux created. You didn't run `helm install`. Flux did.
+
+```bash
+helm history podinfo -n production
+```
+
+One revision. Flux tracks the release lifecycle automatically.
+
+---
+
+## Task 7: Upgrade through Git
+
+On your **local machine**, edit `apps/podinfo-helm/production.yaml` and change the UI message:
+
+```yaml
   values:
-    architecture: nonexistent-mode
-EOF
-
-kubectl apply -f redis-bad-release.yaml
+    ui:
+      message: "Hello from production (Helm) - upgraded via GitOps"
 ```
 
-Observe the failure:
+Commit and push:
 
 ```bash
-# Check the HelmRelease status
-flux get helmreleases
-
-# Get detailed error information
-kubectl describe helmrelease redis-bad -n flux-system
-
-# View Flux events for the failed release
-flux events --for helmrelease/redis-bad
+git add -A
+git commit -m "Update podinfo Helm values: new UI message"
+git push
 ```
 
-!!! info
-    Notice the `install.remediation.retries` field. Flux will attempt to install the release up to 3 times before giving up. You can also configure `upgrade.remediation` for upgrade failures with automatic rollback.
-
-Clean up the failed release:
+On your **bastion node**, watch the upgrade:
 
 ```bash
-kubectl delete helmrelease redis-bad -n flux-system
-kubectl delete namespace redis-bad --ignore-not-found
+flux get helmreleases -A --watch
 ```
 
-### Task 7: Cleanup
-
-Before moving to the next lab, clean up all Helm resources:
+Once reconciled, check the Helm history:
 
 ```bash
-# Delete the HelmRelease (this will uninstall the Helm chart)
-kubectl delete helmrelease redis -n flux-system
-
-# Delete the HelmRepository
-kubectl delete helmrepository bitnami -n flux-system
-
-# Delete the ConfigMap
-kubectl delete configmap redis-values -n flux-system
-
-# Verify resources are cleaned up
-flux get helmreleases
-flux get sources helm
-kubectl get all -n redis
+helm history podinfo -n production
 ```
 
-## Lab Validation
+Two revisions now. The upgrade happened through Git. No `helm upgrade` command. No human in the loop.
 
-Let's confirm you've mastered the key concepts from this lab:
+---
 
-- You can create HelmRepository sources and HelmRelease resources
-- You understand how Helm values are managed through GitOps
-- You know how to use valuesFrom for external configuration
-- You understand how Flux handles Helm release failures and remediation
+## Task 8: Clean up the raw YAML version (optional)
 
-## Summary
+Now that Helm manages podinfo in production, you can remove the raw YAML Kustomize overlay for production. The Helm version is the upgrade path.
 
-Congratulations! You have completed Lab 3 of the GitOps Fundamentals Workshop. In this lab, you've learned:
+!!! tip "Keep both for now"
+    In a real migration, you'd run both side by side, validate the Helm version, then remove the raw YAML. For the workshop, keeping both shows the progression from raw YAML to Helm.
 
-1. How to create HelmRepository sources for chart repositories
-2. How to deploy applications using HelmRelease resources
-3. How to manage Helm values through inline values and valuesFrom
-4. How Flux handles the full Helm lifecycle (install, upgrade, rollback)
-5. How remediation works for failed releases
+---
 
-Helm integration means you don't have to choose between the Helm ecosystem and GitOps. You get the best of both worlds.
+## Validation
 
-## Next Steps
+Confirm all of the following before moving on:
 
-Proceed to [Lab 4: Image Update Automation](4-image-automation.md) to learn how to automate deployments when new container images are pushed.
+- [ ] HelmRepository `podinfo` exists in `flux-system` namespace
+- [ ] HelmRelease `podinfo` exists in `production` namespace with status `Ready`
+- [ ] `helm list -n production` shows the Flux-managed release
+- [ ] `helm history podinfo -n production` shows 2 revisions
+- [ ] `flux get kustomizations` shows `infrastructure` as `Ready: True`
+
+---
+
+## What you built
+
+```
+your-repo/
+├── clusters/
+│   ├── flux-instance.yaml
+│   ├── infrastructure.yaml
+│   ├── apps-dev.yaml
+│   ├── apps-staging.yaml
+│   ├── apps-production.yaml
+│   └── apps-podinfo-helm.yaml
+├── apps/
+│   ├── podinfo/              <-- Raw YAML (Labs 1 & 2)
+│   └── podinfo-helm/         <-- Helm-managed (Lab 3)
+├── infrastructure/
+│   └── sources/
+│       └── podinfo.yaml      <-- HelmRepository
+└── ...
+```
+
+You now have two deployment patterns in one repo: raw YAML with Kustomize overlays (the simple path) and HelmRelease with a shared HelmRepository (the production path). Both managed by Flux. Both sourced from Git.
+
+!!! quote "Think about your current setup"
+    How are Helm charts deployed on your team today? `helm install` from someone's laptop? A CI script that runs `helm upgrade`? What happens when two people upgrade at the same time? That's the problem HelmRelease solves.
+
+[Next: Lab 4 - Secret Management with SOPS](4-sops-secrets.md){ .md-button .md-button--primary }
