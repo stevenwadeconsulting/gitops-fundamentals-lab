@@ -25,6 +25,26 @@ By the end of this lab, you will:
 
 ---
 
+## How Flux Manages Helm
+
+```mermaid
+graph LR
+    A[HelmRepository] -->|chart index| B[Source Controller]
+    C[HelmRelease in Git] -->|watched by| D[Kustomize Controller]
+    D -->|creates| E[HelmRelease on Cluster]
+    E -->|reconciled by| F[Helm Controller]
+    F -->|fetches chart from| B
+    F -->|installs/upgrades| G[Running Application]
+
+    style C fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style E fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style G fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+```
+
+Two controllers work together. The **Source Controller** fetches the chart from the HelmRepository. The **Helm Controller** installs and upgrades the release based on the HelmRelease spec. You change values in Git. Flux handles everything else. No `helm install` from anyone's laptop.
+
+---
+
 ## The Journey So Far
 
 In Lab 1, you wrote raw deployment and service YAML. In Lab 2, you structured it with Kustomize overlays. Both work. But in production, most teams use Helm charts: pre-packaged application definitions with configurable values.
