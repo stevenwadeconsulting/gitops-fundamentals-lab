@@ -157,11 +157,14 @@ kubectl logs -n <namespace> deploy/<name> --tail=20
 ## Flux Operator UI
 
 ```bash
-# Expose the UI via LoadBalancer
-kubectl -n flux-system patch svc flux-operator -p '{"spec": {"type": "LoadBalancer"}}'
+# Start port-forward on the bastion
+kubectl port-forward -n flux-system svc/flux-operator 9080:9080 --address 0.0.0.0 &
 
-# Get the external IP (wait for it to appear)
-kubectl get svc flux-operator -n flux-system --watch
+# Open in browser: http://<YOUR_BASTION_IP>:9080
 
-# Open in browser: http://<EXTERNAL-IP>:9080
+# Check if port-forward is still running
+jobs
+
+# Restart if it stopped
+kubectl port-forward -n flux-system svc/flux-operator 9080:9080 --address 0.0.0.0 &
 ```

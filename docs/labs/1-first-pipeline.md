@@ -282,31 +282,23 @@ kubectl describe kustomization apps -n flux-system
 
 Everything you've done so far has been through the CLI. Flux Operator includes a built-in web dashboard that shows your GitOps pipelines visually.
 
-On your **bastion node**, change the Flux Operator service to a LoadBalancer:
+On your **bastion node**, start a port-forward to expose the UI:
 
 ```bash
-kubectl -n flux-system patch svc flux-operator -p '{"spec": {"type": "LoadBalancer"}}'
+kubectl port-forward -n flux-system svc/flux-operator 9080:9080 --address 0.0.0.0 &
 ```
 
-Wait for the external IP to be assigned (this takes 30-60 seconds):
-
-```bash
-kubectl get svc flux-operator -n flux-system --watch
-```
-
-Once you see an `EXTERNAL-IP` (not `<pending>`), press `Ctrl+C` and note the IP address.
-
-Open your browser and go to:
+Now open your **browser** and go to your bastion IP on port 9080. Your bastion IP is on your instruction page:
 
 ```
-http://<EXTERNAL-IP>:9080
+http://<YOUR_BASTION_IP>:9080
 ```
 
 !!! success "Visual confirmation"
     You should see your GitOps pipelines: the GitRepository source, the Kustomization for your apps, the reconciliation status, all in one dashboard. Every change you push to Git will appear here. Keep this tab open for the rest of the day.
 
 !!! tip "Troubleshooting the UI"
-    If the EXTERNAL-IP stays as `<pending>` for more than 2 minutes, raise your hand. If the page doesn't load, make sure you're using port `9080` (not 8080).
+    If the page doesn't load, check the port-forward is running: `jobs` on the bastion. If it stopped, run the port-forward command again.
 
 ---
 
