@@ -241,14 +241,22 @@ Check the pods:
 kubectl get pods -n podinfo
 ```
 
-You should see 2 pods terminating. Now wait 60 seconds and check again:
+You should see 2 pods terminating. Now force Flux to reconcile immediately (rather than waiting for the 5-minute interval):
+
+```bash
+flux reconcile kustomization apps
+```
+
+Wait a few seconds, then check again:
 
 ```bash
 kubectl get pods -n podinfo
 ```
 
 !!! success "Drift corrected"
-    Flux detected that the cluster state (1 replica) didn't match Git (3 replicas) and corrected it automatically. This is the reconciliation loop. Git always wins. Manual changes get reverted. Configuration drift is impossible.
+    Flux re-applied the desired state from Git (3 replicas) and overrode your manual change. This is the reconciliation loop. Git always wins. Manual changes get reverted.
+
+    In production, this happens automatically on every reconciliation interval. We forced it here so you don't have to wait 5 minutes. The point is the same: nobody can change the cluster and have it stick. Git is the source of truth.
 
 ---
 
