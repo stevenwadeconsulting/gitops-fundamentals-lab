@@ -71,16 +71,18 @@ You should see the `flux-operator` pod in a `Running` state.
 
 ## Task 2: Create a GitHub Personal Access Token
 
-Flux needs to authenticate with your GitHub repository. Create a fine-grained personal access token:
+Flux needs to authenticate with your GitHub repository. Create a classic personal access token:
 
-1. Go to [github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta)
-2. Click **Generate new token**
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **Generate new token** > **Generate new token (classic)**
 3. Name it: `flux-workshop`
 4. Expiration: **7 days** (this is a workshop, not production)
-5. Repository access: **Only select repositories** and choose your `platformfix/gitops-workshop-<your-username>` repo
-6. Permissions: **Contents** (Read and write)
-7. Click **Generate token**
-8. Copy the token. You will need it in the next step.
+5. Select scope: **repo** (full control of private repositories)
+6. Click **Generate token**
+7. Copy the token. You will need it in the next step.
+
+!!! info "Why a classic token?"
+    Your workshop repository was created by GitHub Classroom under the `platformfix` organisation. Fine-grained tokens require explicit org approval to access these repos. A classic token with `repo` scope works immediately. For production, use fine-grained tokens with minimal scopes.
 
 !!! warning "Save your token"
     You won't be able to see the token again after leaving the page. Paste it somewhere safe (your `notes.md` is a good place).
