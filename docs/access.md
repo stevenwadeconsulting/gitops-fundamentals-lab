@@ -163,12 +163,12 @@ Click the GitHub Classroom link below (or Steve will share it on screen):
 
 ## Step 6: Access the Flux Operator UI (set up in Lab 1)
 
-The Flux Operator includes a built-in web dashboard. You'll access it directly from your browser using a worker node IP and NodePort.
+The Flux Operator includes a built-in web dashboard. You'll access it via a LoadBalancer service.
 
-Lab 1 will walk you through exposing the service. Once set up:
+Lab 1 will walk you through creating the service. Once set up:
 
 ```
-http://<NODE_EXTERNAL_IP>:30080
+http://<LOAD_BALANCER_IP>:9080
 ```
 
 !!! note "You'll set this up during Lab 1"

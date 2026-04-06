@@ -157,12 +157,11 @@ kubectl logs -n <namespace> deploy/<name> --tail=20
 ## Flux Operator UI
 
 ```bash
-# Expose the UI via NodePort
-kubectl -n flux-system patch svc flux-operator \
-  -p '{"spec": {"type": "NodePort", "ports": [{"port": 9080, "targetPort": 9080, "nodePort": 30080}]}}'
+# Expose the UI via LoadBalancer
+kubectl -n flux-system patch svc flux-operator -p '{"spec": {"type": "LoadBalancer"}}'
 
-# Get the node IP
-kubectl get nodes -o wide
+# Get the external IP (wait for it to appear)
+kubectl get svc flux-operator -n flux-system --watch
 
-# Open in browser: http://<NODE_EXTERNAL_IP>:30080
+# Open in browser: http://<EXTERNAL-IP>:9080
 ```
