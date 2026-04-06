@@ -24,6 +24,38 @@ By the end of this lab, you will:
 
 ---
 
+## Two Things Called "Kustomization" (Don't Panic)
+
+This lab uses two different things that share the same name. This trips up everyone. Let's clear it up now.
+
+```mermaid
+graph TD
+    subgraph "Kustomize (the tool)"
+        A[kustomization.yaml] -->|"apiVersion: kustomize.config.k8s.io/v1beta1"| B[Combines and patches YAML files locally]
+        B --> C[Output: plain Kubernetes manifests]
+    end
+
+    subgraph "Flux Kustomization (the CRD)"
+        D[Kustomization resource] -->|"apiVersion: kustomize.toolkit.fluxcd.io/v1"| E[Tells Flux what to apply from Git]
+        E --> F[Points to a path in your repo]
+        F --> G[Flux applies whatever is at that path]
+    end
+
+    style A fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style D fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+```
+
+| | Kustomize (the tool) | Flux Kustomization (the CRD) |
+|--|---------------------|------------------------------|
+| **API version** | `kustomize.config.k8s.io/v1beta1` | `kustomize.toolkit.fluxcd.io/v1` |
+| **What it does** | Combines YAML files, applies patches and overlays | Tells Flux which directory in Git to watch and apply |
+| **Where it lives** | `kustomization.yaml` inside your app directories | `clusters/` directory as a Flux resource |
+| **Who runs it** | You (locally) or Flux (on the cluster) | Flux only |
+
+In this lab you'll create **both**: Kustomize files that structure your app config, and Flux Kustomizations that tell Flux where to find them.
+
+---
+
 ## The Problem
 
 Right now you have one deployment of podinfo. In production, you need the same application running in dev (for testing), staging (for validation), and production (for real traffic). Each with different replica counts, resource limits, and possibly different image versions.
