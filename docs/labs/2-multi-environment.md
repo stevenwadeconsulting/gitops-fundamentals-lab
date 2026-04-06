@@ -30,16 +30,17 @@ This lab uses two different things that share the same name. This trips up every
 
 ```mermaid
 graph TD
-    subgraph "Kustomize (the tool)"
-        A[kustomization.yaml] -->|"apiVersion: kustomize.config.k8s.io/v1beta1"| B[Combines and patches YAML files locally]
-        B --> C[Output: plain Kubernetes manifests]
+    subgraph KustomizeTool ["Kustomize (the tool) - kustomize.config.k8s.io/v1beta1"]
+        A[kustomization.yaml in your app directory] --> B[Combines base + overlay YAML files]
+        B --> C[Outputs plain Kubernetes manifests]
     end
 
-    subgraph "Flux Kustomization (the CRD)"
-        D[Kustomization resource] -->|"apiVersion: kustomize.toolkit.fluxcd.io/v1"| E[Tells Flux what to apply from Git]
-        E --> F[Points to a path in your repo]
-        F --> G[Flux applies whatever is at that path]
+    subgraph FluxKustomization ["Flux Kustomization (the CRD) - kustomize.toolkit.fluxcd.io/v1"]
+        D[Kustomization resource in clusters/] --> E[Tells Flux which path in Git to watch]
+        E --> F[Flux applies everything at that path]
     end
+
+    KustomizeTool -.->|"Flux runs Kustomize automatically when applying"| FluxKustomization
 
     style A fill:#1F2937,stroke:#D4A843,color:#F0EFE8
     style D fill:#1F2937,stroke:#22C55E,color:#F0EFE8
