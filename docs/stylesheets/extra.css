@@ -42,6 +42,33 @@
   color: #D4A843;
 }
 
+/* Mobile nav hamburger and header buttons */
+.md-header__button {
+  color: #F0EFE8 !important;
+}
+
+.md-header__button.md-logo {
+  color: #D4A843 !important;
+}
+
+/* Mobile nav drawer */
+.md-nav--primary .md-nav__title {
+  background-color: #0A0F1C;
+  color: #D4A843;
+}
+
+.md-nav--primary .md-nav__item {
+  border-top-color: #374151;
+}
+
+.md-nav--primary .md-nav__link {
+  color: #F0EFE8;
+}
+
+.md-nav--primary .md-nav__link--active {
+  color: #D4A843;
+}
+
 /* Navigation tabs */
 .md-tabs {
   background-color: #0A0F1C;
