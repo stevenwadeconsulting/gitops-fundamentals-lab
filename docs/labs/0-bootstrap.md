@@ -223,7 +223,14 @@ Wait 30 seconds, then check the FluxInstance status:
 kubectl get fluxinstance -n flux-system
 ```
 
-You should see the `flux` instance with `Ready: True`.
+You should see something like:
+
+```
+NAME   AGE   READY   STATUS                           REVISION
+flux   13m   True    Reconciliation finished in 22s   v2.8.3@sha256:6c55b792...
+```
+
+The key fields: `READY: True` and a `REVISION` showing the Flux version.
 
 Check the Flux components:
 
@@ -231,7 +238,7 @@ Check the Flux components:
 kubectl get pods -n flux-system
 ```
 
-You should see the source-controller, kustomize-controller, helm-controller, and notification-controller all running.
+You should see the flux-operator, source-controller, kustomize-controller, helm-controller, and notification-controller all running.
 
 Check that Flux is watching your repository:
 
@@ -239,7 +246,14 @@ Check that Flux is watching your repository:
 flux get sources git -A
 ```
 
-You should see your GitRepository with a `Ready` status.
+You should see:
+
+```
+NAMESPACE    NAME          REVISION                        SUSPENDED  READY  MESSAGE
+flux-system  flux-system   refs/heads/main@sha1:abc123..   False      True   stored artifact for revision...
+```
+
+`READY: True` and your repo's latest commit hash in `REVISION`. Flux is connected to your Git repo.
 
 ---
 
@@ -247,13 +261,24 @@ You should see your GitRepository with a `Ready` status.
 
 This is the key insight. Flux is now managing itself from your Git repo. The `FluxInstance` you pushed to `clusters/flux-instance.yaml` is the source of truth for how Flux is configured.
 
-Check the Kustomization that manages the cluster:
+Check the Kustomizations that Flux is managing:
 
 ```bash
 flux get kustomizations -A
 ```
 
-You should see a kustomization pointing to the `clusters` path of your repository.
+You should see:
+
+```
+NAMESPACE    NAME            REVISION                        SUSPENDED  READY  MESSAGE
+flux-system  flux-operator   latest@sha256:9b68a6c0          False      True   Applied revision: latest@sha256:9b68a6c0
+flux-system  flux-system     refs/heads/main@sha1:abc123..   False      True   Applied revision: refs/heads/main@sha1:abc123..
+```
+
+Two kustomizations:
+
+- **flux-operator**: Flux managing the operator itself
+- **flux-system**: Flux watching your repo's `clusters/` directory
 
 !!! success "The aha moment"
     Flux is watching the `clusters/` directory of your repo. The `FluxInstance` resource you committed IS the Flux configuration. If you change it in Git, push, and wait: Flux updates itself. The tool that manages your deployments is itself managed by Git. This is GitOps all the way down.
