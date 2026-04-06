@@ -217,11 +217,13 @@ kubectl apply -f /tmp/flux-instance.yaml
 
 ## Task 6: Verify Flux is syncing
 
-Wait 30 seconds, then check:
+Wait 30 seconds, then check the FluxInstance status:
 
 ```bash
-flux-operator status
+kubectl get fluxinstance -n flux-system
 ```
+
+You should see the `flux` instance with `Ready: True`.
 
 Check the Flux components:
 
