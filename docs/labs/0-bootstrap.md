@@ -165,11 +165,41 @@ git push
 
 ## Task 5: Apply the FluxInstance
 
-On your **bastion node**, apply the FluxInstance to your cluster:
+On your **bastion node**, apply the FluxInstance directly. Copy and paste the full YAML below, replacing `YOUR_USERNAME` with your GitHub username:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/platformfix/gitops-workshop-YOUR_USERNAME/main/clusters/flux-instance.yaml
+cat <<EOF | kubectl apply -f -
+apiVersion: fluxcd.controlplane.io/v1
+kind: FluxInstance
+metadata:
+  name: flux
+  namespace: flux-system
+spec:
+  distribution:
+    version: "2.x"
+    registry: "ghcr.io/fluxcd"
+    artifact: "oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests"
+  components:
+    - source-controller
+    - kustomize-controller
+    - helm-controller
+    - notification-controller
+  cluster:
+    type: kubernetes
+    multitenant: false
+    networkPolicy: true
+    domain: "cluster.local"
+  sync:
+    kind: GitRepository
+    url: "https://github.com/platformfix/gitops-workshop-YOUR_USERNAME"
+    ref: "refs/heads/main"
+    path: "clusters"
+    pullSecret: "flux-system"
+EOF
 ```
+
+!!! warning "Replace YOUR_USERNAME"
+    Make sure you replace `YOUR_USERNAME` in the URL with your actual GitHub username before pressing enter.
 
 !!! tip "One-time bootstrap"
     This is the only time you'll use `kubectl apply` directly. From now on, everything goes through Git. Flux will watch your repository and apply changes automatically, including changes to its own configuration.
