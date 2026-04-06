@@ -10,6 +10,7 @@ Break things on purpose. Learn how to find out what's wrong, why it's wrong, and
 
 By the end of this lab, you will:
 
+- Set up Flux notifications so GitHub shows deployment status on your commits
 - Monitor Flux health and reconciliation status
 - Use the four-step troubleshooting pattern from 50+ platform rescues
 - Diagnose and fix a broken deployment through Git
@@ -45,7 +46,90 @@ All components should report as healthy.
 
 ---
 
-## Task 2: Learn the four-step troubleshooting pattern
+## Task 2: Set up GitHub commit status notifications
+
+Flux can notify external systems when reconciliations succeed or fail. The most visual option: GitHub commit status. Every commit in your repo gets a green tick or red cross based on whether Flux successfully applied it.
+
+First, create a secret with your GitHub token for the notification provider. On your **bastion node**:
+
+```bash
+kubectl create secret generic github-token \
+  --namespace=flux-system \
+  --from-literal=token=YOUR_GITHUB_TOKEN
+```
+
+Use the same GitHub personal access token you created in Lab 0.
+
+Now on your **local machine**, create `clusters/notifications.yaml`:
+
+```yaml
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: github-status
+  namespace: flux-system
+spec:
+  type: github
+  address: https://github.com/platformfix/gitops-workshop-YOUR_USERNAME
+  secretRef:
+    name: github-token
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: github-status
+  namespace: flux-system
+spec:
+  providerRef:
+    name: github-status
+  eventSeverity: info
+  eventSources:
+    - kind: Kustomization
+      name: '*'
+    - kind: HelmRelease
+      name: '*'
+```
+
+!!! warning "Update the URL"
+    Replace `YOUR_USERNAME` in the Provider address with your GitHub username.
+
+Commit and push:
+
+```bash
+git add -A
+git commit -m "Add GitHub commit status notifications"
+git push
+```
+
+On your **bastion node**, verify the provider and alert are ready:
+
+```bash
+flux get alert-providers
+flux get alerts
+```
+
+Now go to your repository on GitHub and look at your latest commit. You should see a green tick (or a pending/running status) next to it.
+
+!!! success "The notification controller in action"
+    From now on, every commit gets a status from Flux. Green means Flux applied it successfully. Red means something failed. Your team can see deployment status without leaving GitHub. No Slack bots. No dashboards. Just Git.
+
+```mermaid
+graph LR
+    A[You push a commit] --> B[GitHub]
+    B -->|Flux pulls| C[Flux Controllers]
+    C -->|reconcile| D[Cluster]
+    C -->|report status| B
+    B -->|shows tick or cross| E[Commit Status]
+
+    style A fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style B fill:#1F2937,stroke:#D4A843,color:#F0EFE8
+    style D fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+    style E fill:#1F2937,stroke:#22C55E,color:#F0EFE8
+```
+
+---
+
+## Task 3: Learn the four-step troubleshooting pattern
 
 When something goes wrong in a Flux-managed cluster, follow this pattern every time:
 
@@ -68,9 +152,9 @@ kubectl logs -n flux-system deploy/kustomize-controller --tail=20
 
 ---
 
-## Task 3: Break something on purpose
+## Task 4: Break something on purpose (and watch GitHub turn red)
 
-On your **local machine**, introduce a deliberate error. Edit `apps/podinfo/overlays/dev/kustomization.yaml` and add an invalid patch:
+Now that notifications are set up, you'll see the commit status change in real time. On your **local machine**, introduce a deliberate error. Edit `apps/podinfo/overlays/dev/kustomization.yaml` and add an invalid patch:
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -106,7 +190,7 @@ git push
 
 ---
 
-## Task 4: Diagnose the failure
+## Task 5: Diagnose the failure
 
 On your **bastion node**, watch the kustomization fail:
 
@@ -169,6 +253,8 @@ flux get kustomizations --watch
 ```
 
 `apps-dev` should go back to `Ready: True`. You fixed a broken deployment without touching kubectl. The fix is in the Git history. The rollback is auditable.
+
+Check your repository on GitHub. The broken commit should have a red cross. The revert commit should have a green tick. Your team can see exactly which commits deployed successfully without leaving GitHub.
 
 !!! warning "Never use kubectl rollout undo"
     In a GitOps workflow, `kubectl rollout undo` gets immediately overwritten by Flux. The reconciliation loop re-applies the state from Git. If you undo in the cluster but don't fix Git, the broken state comes back. Always fix through Git.

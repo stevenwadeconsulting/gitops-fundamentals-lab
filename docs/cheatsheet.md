@@ -25,6 +25,21 @@ flux get sources all
 
 ---
 
+## Notifications
+
+```bash
+# List alert providers
+flux get alert-providers
+
+# List alerts
+flux get alerts
+
+# Check notification controller logs
+kubectl logs -n flux-system deploy/notification-controller --tail=20
+```
+
+---
+
 ## Troubleshooting (Four-Step Pattern)
 
 ```bash
