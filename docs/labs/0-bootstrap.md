@@ -85,7 +85,18 @@ Flux needs to authenticate with your GitHub repository. Create a classic persona
     Your workshop repository was created by GitHub Classroom under the `platformfix` organisation. Fine-grained tokens require explicit org approval to access these repos. A classic token with `repo` scope works immediately. For production, use fine-grained tokens with minimal scopes.
 
 !!! warning "Save your token"
-    You won't be able to see the token again after leaving the page. Paste it somewhere safe (your `notes.md` is a good place).
+    You won't be able to see the token again after leaving the page. Save it in your repo now.
+
+On your **local machine**, open `notes.md` in your editor and paste the token under the Lab 0 section. Then:
+
+```bash
+cd ~/gitops-workshop-YOUR_USERNAME
+git add notes.md
+git commit -m "Save GitHub token for workshop"
+git push
+```
+
+This is a private repo. Only you can see it. You'll need this token again in Lab 5.
 
 ---
 
