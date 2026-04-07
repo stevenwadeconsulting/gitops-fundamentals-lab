@@ -8,35 +8,37 @@ Congratulations. You just built a production-grade GitOps pipeline in 6 hours. H
 
 ```
 your-repo/
-├── .sops.yaml                             # SOPS encryption config
+├── .sops.yaml                             # SOPS encryption config (pre-configured)
 ├── sops/
-│   └── age-key.txt                        # Workshop encryption key
+│   └── age-key.txt                        # Workshop encryption key (pre-configured)
 ├── clusters/
 │   ├── flux-instance.yaml                 # Flux manages itself (Lab 0)
 │   ├── infrastructure.yaml                # Shared HelmRepositories (Lab 3)
-│   ├── apps-dev.yaml                      # Dev environment (Lab 2)
-│   ├── apps-staging.yaml                  # Staging environment (Lab 2)
-│   ├── apps-production.yaml               # Production environment (Lab 2)
-│   └── apps-podinfo-helm.yaml             # Helm-managed app + SOPS (Labs 3-4)
+│   ├── apps-podinfo-helm.yaml             # Helm-managed app + SOPS decryption (Labs 3-4)
+│   └── notifications.yaml                 # GitHub commit status alerts (Lab 5)
 ├── apps/
-│   ├── podinfo/
-│   │   ├── base/                          # Shared app definition (Lab 1)
+│   ├── podinfo/                           # Raw YAML reference from Labs 1-2 (not synced)
+│   │   ├── base/
 │   │   │   ├── deployment.yaml
 │   │   │   ├── service.yaml
 │   │   │   └── kustomization.yaml
-│   │   └── overlays/                      # Environment patches (Lab 2)
+│   │   └── overlays/
 │   │       ├── dev/
 │   │       ├── staging/
 │   │       └── production/
 │   └── podinfo-helm/
+│       ├── namespace.yaml                 # Production namespace (Lab 3)
 │       ├── production.yaml                # HelmRelease (Lab 3)
 │       ├── secret.encrypted.yaml          # SOPS encrypted secret (Lab 4)
 │       └── kustomization.yaml
 ├── infrastructure/
 │   └── sources/
 │       └── podinfo.yaml                   # HelmRepository (Lab 3)
-└── notes.md                               # Your scratchpad
+└── notes.md                               # Your scratchpad + GitHub token
 ```
+
+!!! info "What's active vs reference"
+    The `apps/podinfo/` directory still exists from Labs 1-2 but no Flux Kustomization watches it. It's there as a reference for how raw YAML works. Everything that's actively deployed comes through the `apps/podinfo-helm/` path via Helm.
 
 ---
 
