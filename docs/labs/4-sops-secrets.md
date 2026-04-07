@@ -173,77 +173,12 @@ You should see `my-super-secret-api-key-12345`.
 
 ---
 
-## Task 4: Mount the secret into podinfo
-
-On your **local machine**, edit `apps/podinfo-helm/production.yaml` to use the secret:
-
-```yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: podinfo
-  namespace: production
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: podinfo
-      version: ">=6.0.0"
-      sourceRef:
-        kind: HelmRepository
-        name: podinfo
-        namespace: flux-system
-  values:
-    replicaCount: 3
-    resources:
-      requests:
-        cpu: 200m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    ui:
-      message: "Hello from production (Helm + SOPS)"
-    extraEnvFrom:
-      - secretRef:
-          name: podinfo-secrets
-```
-
-Commit and push:
-
-```bash
-git add -A
-git commit -m "Mount encrypted secrets into podinfo"
-git push
-```
-
----
-
-## Task 5: Verify the application has the secrets
-
-On your **bastion node**, force Flux to reconcile and wait for the HelmRelease to upgrade with the new secret mount:
-
-```bash
-flux reconcile kustomization apps-podinfo-helm
-flux get helmreleases -A --watch
-```
-
-Wait for the podinfo HelmRelease to show `Ready: True` and a new revision. This can take 1-2 minutes as Helm rolls out new pods with the secret mounted. Once ready:
-
-```bash
-kubectl exec -n production deploy/podinfo -- env | grep -E "API_KEY|DB_PASSWORD"
-```
-
-Both environment variables with their decrypted values. Encrypted file in Git. Decrypted secret on the cluster. Environment variables in the running pod.
-
----
-
 ## Validation
 
 - [ ] `sops-age` secret exists in `flux-system` namespace
 - [ ] `secret.encrypted.yaml` is in your repo with encrypted values
 - [ ] `kubectl get secret podinfo-secrets -n production` returns the secret
-- [ ] Decrypted values are accessible inside the podinfo pod
+- [ ] Decrypted values can be verified: `kubectl get secret podinfo-secrets -n production -o jsonpath='{.data.API_KEY}' | base64 -d`
 
 ---
 
