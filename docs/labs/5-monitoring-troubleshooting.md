@@ -130,6 +130,31 @@ graph LR
 
 ---
 
+## The Three Types of Configuration Drift
+
+Before we break things on purpose, understand what breaks things in production. Configuration drift is when the live state of your cluster diverges from what's in Git. It comes in three forms:
+
+**1. Intentional manual changes (the most common)**
+
+Someone runs `kubectl edit` or `kubectl scale` during an incident. The cluster changes. Git doesn't know about it. This is the "emergency hotfix" that never gets committed back.
+
+**2. Unintentional controller mutations**
+
+Kubernetes controllers modify resources at runtime. The Horizontal Pod Autoscaler changes replica counts. Istio injects sidecar containers. These changes are correct but they don't exist in your Git manifests, so your GitOps tool reports "out of sync" even though nothing is wrong.
+
+**3. External interference**
+
+Mutating admission webhooks add default values. Controllers set fields you never defined. This creates noise that erodes trust in the sync status.
+
+!!! danger "The break-glass trap"
+    An engineer scales replicas from 3 to 5 during a traffic spike. Flux detects the drift. Flux scales it back to 3. The traffic spike re-triggers. The engineer curses GitOps.
+
+    The fix: commit the change to Git. Let Flux reconcile the correct number. If you need emergency scaling, scale in Git. Even a one-line commit is faster than fighting the reconciliation loop.
+
+    **The most dangerous words in platform engineering: "I'll commit it to Git after the incident."** You won't. Nobody ever does.
+
+---
+
 ## Task 3: Learn the four-step troubleshooting pattern
 
 When something goes wrong in a Flux-managed cluster, follow this pattern every time:

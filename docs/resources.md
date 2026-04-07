@@ -8,6 +8,15 @@
 - [Kustomize Documentation](https://kustomize.io/){ target="_blank" }
 - [Mozilla SOPS](https://github.com/getsops/sops){ target="_blank" }
 
+## Industry Research
+
+Use these reports to build the business case for GitOps at your organisation.
+
+- [CNCF Annual Survey 2024](https://www.cncf.io/reports/cncf-annual-survey-2024/){ target="_blank" }: Cloud-native adoption trends, GitOps adoption rates
+- [2025 DORA Report](https://dora.dev/research/2025/){ target="_blank" }: Deployment frequency, lead time, MTTR, change failure rate, and the first measurement of AI's impact on delivery performance
+- [Komodor 2025 Enterprise Kubernetes Report](https://komodor.com/blog/komodor-2025-enterprise-kubernetes-report-finds-nearly-80-of-production-outages/){ target="_blank" }: 80% of outages from recent changes, 34 workdays/year lost to troubleshooting
+- [GitOps in 2025 (CNCF Blog)](https://www.cncf.io/blog/2025/06/09/gitops-in-2025-from-old-school-updates-to-the-modern-way/){ target="_blank" }: The shift from push-based to pull-based operations
+
 ## Troubleshooting
 
 If you hit an issue during the labs:

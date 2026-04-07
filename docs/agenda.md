@@ -4,6 +4,25 @@ A full day of hands-on GitOps. Five labs. One demo. Zero slides you'll forget by
 
 ---
 
+## Why GitOps Matters (The Numbers)
+
+Use these when making the case to your team on Monday.
+
+| Stat | Source |
+|------|--------|
+| 64% of organisations have adopted GitOps | CNCF/Codefresh GitOps Survey 2025 |
+| 68% still experience configuration drift despite adoption | CNCF/Codefresh GitOps Survey 2025 |
+| Manual deployments carry a 27.4% higher incident rate | Argo CD User Survey 2025 |
+| MTTR: 5.2 hours (manual) vs 37 minutes (automated GitOps) | Argo CD User Survey 2025 |
+| 38% of teams still make manual changes to production clusters | Argo CD User Survey 2025 |
+| 67% still use custom scripts for environment promotion | Argo CD User Survey 2025 |
+| 30-40% of Kubernetes cloud spend is wasted | FinOps Foundation 2025 |
+
+!!! tip "The one-liner for your leadership"
+    "GitOps is 20% tooling and 80% discipline. Most teams got the 20% right and called it done."
+
+---
+
 ## Morning: Foundations
 
 !!! abstract "09:00 - 09:45 | The Deployment Reality Check"
