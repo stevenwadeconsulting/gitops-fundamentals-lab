@@ -221,7 +221,14 @@ git push
 
 ## Task 5: Verify the application has the secrets
 
-On your **bastion node**, once Flux reconciles:
+On your **bastion node**, force Flux to reconcile and wait for the HelmRelease to upgrade with the new secret mount:
+
+```bash
+flux reconcile kustomization apps-podinfo-helm
+flux get helmreleases -A --watch
+```
+
+Wait for the podinfo HelmRelease to show `Ready: True` and a new revision. This can take 1-2 minutes as Helm rolls out new pods with the secret mounted. Once ready:
 
 ```bash
 kubectl exec -n production deploy/podinfo -- env | grep -E "API_KEY|DB_PASSWORD"
