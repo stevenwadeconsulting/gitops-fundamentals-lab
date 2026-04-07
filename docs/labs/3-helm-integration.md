@@ -59,18 +59,19 @@ The fix: Flux manages Helm. You define a `HelmRelease` in Git. Flux installs, up
 
 Labs 1 and 2 taught you raw YAML with Kustomize overlays. You've seen how that works. Now we're moving to Helm, which is how most production teams manage applications.
 
-On your **local machine**, remove the raw YAML Kustomizations and the apps/podinfo directory:
+On your **local machine**, remove the Flux Kustomizations that watch the raw YAML directories:
 
 ```bash
 rm clusters/apps.yaml clusters/apps-dev.yaml clusters/apps-staging.yaml clusters/apps-production.yaml
-rm -rf apps/podinfo
 ```
+
+The `apps/podinfo/` directory stays in your repo as a reference. Flux just stops watching it because no Kustomization points to it anymore.
 
 Commit and push:
 
 ```bash
 git add -A
-git commit -m "Remove raw YAML deployments (moving to Helm)"
+git commit -m "Remove raw YAML Flux Kustomizations (moving to Helm)"
 git push
 ```
 
