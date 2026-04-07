@@ -96,7 +96,7 @@ kubectl get secret sops-age -n flux-system
 
 ## Task 2: Configure Flux to decrypt SOPS secrets
 
-On your **local machine**, edit `clusters/apps-podinfo-helm.yaml` and add the `decryption` block:
+On your **local machine**, replace the entire contents of `clusters/apps-podinfo-helm.yaml` with the following. The only change from before is the `decryption` block at the bottom:
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -115,13 +115,17 @@ spec:
   path: ./apps/podinfo-helm
   wait: true
   timeout: 5m
+  # NEW: tell Flux to decrypt SOPS-encrypted files in this path
   decryption:
     provider: sops
     secretRef:
       name: sops-age
 ```
 
-Also update `apps/podinfo-helm/kustomization.yaml` to include the encrypted secret:
+!!! tip "What changed?"
+    The only addition is the last 4 lines: the `decryption` block. This tells Flux: "when you find SOPS-encrypted files in this path, use the `sops-age` secret to decrypt them before applying."
+
+Also replace the entire contents of `apps/podinfo-helm/kustomization.yaml` to include the encrypted secret:
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
