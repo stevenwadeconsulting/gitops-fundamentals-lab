@@ -6,14 +6,21 @@
 
 ---
 
-## Pre-Demo (15:20, during the break)
+## Pre-Demo (during the 14:40 break)
 
-1. SSH into participant-001's bastion
-2. Run: `bash demo/setup.sh`
-3. Verify: one working HelmRelease, one broken
-4. On your laptop: copy kubeconfig from bastion (`scp -i id_rsa root@BASTION_IP:/root/.kube/config ~/.kube/config`)
-5. Open Claude Desktop / Cursor with MCP configured
-6. Test: "What version of Flux is running in my current cluster?" (should return a real answer)
+If you haven't already set up MCP on your laptop, run the setup script:
+
+```bash
+bash demo/setup.sh <BASTION_IP>
+```
+
+This copies the kubeconfig, tests the connection, and prints the Claude Desktop config you need.
+
+If MCP is already configured from earlier testing:
+
+1. Verify Claude Desktop has the MCP server connected (check the MCP icon)
+2. Make sure the Lab 5 breakage is still in place (the attendees should NOT have reverted yet)
+3. Test: "What version of Flux is running in my current cluster?"
 
 ---
 
@@ -59,41 +66,25 @@ Type into the AI assistant:
 
 ## Prompt 3: Root Cause Analysis (5 minutes)
 
-This is the centrepiece.
+This is the centrepiece. The attendees just spent 10 minutes manually debugging the same breakage in Lab 5 using the four-step pattern. Now MCP does it in 30 seconds.
 
 > "Perform a root cause analysis of the last failed Helm release in the production namespace."
 
-**What the audience sees:** The AI traces through the HelmRelease, checks the HelmChart source, reads the controller logs, and presents a root cause: image tag 99.99.99 doesn't exist.
+**What the audience sees:** The AI traces through the HelmRelease, checks the HelmChart source, reads the controller logs, and presents a root cause: chart version 99.99.99 doesn't exist.
 
 **Say:**
 
-> "It traced from the HelmRelease, through the HelmChart, down to the controller logs. That's the full GitOps stack, one query, one answer. 
+> "You just spent the last 10 minutes doing this manually. Four commands. Status, describe, events, logs. You found the answer.
 >
-> An on-call engineer would take 15-20 minutes to do this manually. The MCP server did it in 30 seconds.
+> The MCP server just did the same thing in 30 seconds. It traced the full GitOps stack, one query, one answer.
 >
-> And notice: it gave us the fix. Change the image tag. In our workshop, that fix goes through Git. Commit, push, Flux reconciles."
+> This isn't about replacing you. It's about cognitive load. Every minute you spend piecing together what happened is a minute you're not shipping."
 
 Pause. Let that land.
 
 ---
 
-## Prompt 4: Live Operations (3 minutes)
-
-> "Delete the podinfo-canary HelmRelease from the production namespace."
-
-**What the audience sees:** The AI deletes the broken release.
-
-> "Verify the deletion was successful and show me the current state of all HelmReleases in production."
-
-**What the audience sees:** Only the healthy podinfo release remains.
-
-**Say:**
-
-> "Write operations go through your existing RBAC. The AI can't do anything your service account couldn't do with kubectl. And there's a read-only mode for production clusters."
-
----
-
-## Prompt 5: Documentation (2 minutes)
+## Prompt 4: Documentation (2 minutes)
 
 > "How do I configure health checks for a HelmRelease? Search the latest Flux docs."
 
