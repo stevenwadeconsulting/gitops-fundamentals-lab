@@ -2,7 +2,7 @@
 
 AI-assisted GitOps. Talk to your cluster in natural language. Debug, analyse, and operate your GitOps pipelines without memorising kubectl commands.
 
-<span class="lab-duration">20 minutes &middot; live demo</span>
+<span class="lab-duration">20 minutes · live demo</span>
 
 ---
 
@@ -11,57 +11,50 @@ AI-assisted GitOps. Talk to your cluster in natural language. Debug, analyse, an
 
 ---
 
-## What You'll See
+## Demo Prompts
 
-### 1. Health check in one prompt
+Copy and paste these into Claude Desktop during the demo.
 
-Instead of running `flux check`, `flux get all -A`, and `kubectl get events -A` separately:
+### Prompt 1: Health Check
 
-> "Analyse the Flux installation in my current cluster and report the status of all components and managed resources."
+```
+Analyse the Flux installation in my current cluster and report the status of all components and managed resources.
+```
 
-One prompt. One synthesised answer. The AI calls the same Kubernetes API you would, it just presents the synthesis.
+One prompt replaces `flux check`, `flux get all -A`, and `kubectl get events -A`. The AI calls the same Kubernetes API you would, it just presents the synthesis.
 
 ---
 
-### 2. Dependency visualisation from live state
+### Prompt 2: Dependency Diagram
 
-> "List the Flux Kustomizations and draw a Mermaid diagram showing the depends-on relationships."
+```
+List the Flux Kustomizations and draw a Mermaid diagram showing the depends-on relationships.
+```
 
 The AI reads your cluster's actual Kustomization resources, parses the `dependsOn` fields, and generates a live dependency diagram. Not from documentation. From your cluster. Always accurate.
 
 ---
 
-### 3. Root cause analysis
+### Prompt 3: Root Cause Analysis
 
-This is the most powerful capability. Steve will intentionally break a HelmRelease, then ask:
+```
+Perform a root cause analysis of the last failed Helm release in the production namespace.
+```
 
-> "Perform a root cause analysis of the last failed Helm release in the podinfo namespace."
+You just spent Lab 5 debugging this manually with the four-step pattern. The MCP server does the same thing in 30 seconds:
 
-The AI will:
-
-1. Check the HelmRelease status and events
-2. Check the HelmChart source status
-3. Check the Helm controller pod
-4. Pull the controller logs filtered to the release name
-5. Synthesise a root cause with remediation steps
-
-This is what an on-call engineer does over 15-20 minutes. The MCP server does it in 30 seconds.
+1. Checks the HelmRelease status and events
+2. Checks the HelmChart source status
+3. Pulls the controller logs
+4. Synthesises a root cause with remediation steps
 
 ---
 
-### 4. Live operations
+### Prompt 4: Documentation Search
 
-> "Suspend all failing HelmReleases in the test namespace, then delete them from the cluster."
-
-> "Resume all suspended Flux Kustomizations in the cluster and verify their status."
-
-Write operations through natural language. Every action goes through your existing RBAC. The AI can't do anything your service account couldn't do with kubectl. And there's a `--read-only` mode for production.
-
----
-
-### 5. Documentation-grounded answers
-
-> "How do I configure mutual TLS for a Flux GitRepository? Answer using the latest Flux docs."
+```
+How do I configure health checks for a HelmRelease? Search the latest Flux docs.
+```
 
 The AI searches the live Flux documentation, not its training data. GitOps tooling changes fast. This ensures answers reflect the current API.
 
@@ -79,19 +72,6 @@ Every minute you spend:
 - Mentally diffing two clusters
 
 ...is a minute you're not shipping. The Flux MCP Server removes the translation layer between "what do I want to know?" and "the answer."
-
----
-
-## The Future of Platform Operations
-
-Flux MCP is early. It launched in 2025. Most teams haven't seen it yet. But this is where platform operations is going:
-
-- AI agents that understand your cluster state
-- Natural language debugging that chains multiple tools automatically
-- Cross-cluster comparison without terminal window gymnastics
-- Documentation that's always current, never stale
-
-The teams who figure this out first will have an unfair advantage.
 
 ---
 
@@ -119,7 +99,9 @@ Add to your AI assistant's MCP configuration:
 
 Start with:
 
-> "What version of Flux is running in my current cluster?"
+```
+What version of Flux is running in my current cluster?
+```
 
 If that works, everything is connected.
 
@@ -140,7 +122,6 @@ If that works, everything is connected.
 |-----|-----|
 | Start broad, then narrow | "Analyse the Flux installation" before "debug this specific resource" |
 | Name specific resources | "the podinfo HelmRelease in production" is 3x faster than "any failing releases" |
-| Ask for Mermaid diagrams | Visually compelling. Renders inline in Claude and VS Code. |
-| Chain operations | "Suspend all failing releases, then delete them" demonstrates workflow automation |
+| Ask for Mermaid diagrams | Visually compelling. Renders inline in Claude. |
 | Append "Search the latest docs" | Routes through `search_flux_docs` instead of stale training data |
 | Ask "Which cluster am I connected to?" first | Prevents accidental operations on the wrong cluster |
