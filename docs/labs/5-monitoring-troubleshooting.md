@@ -50,7 +50,7 @@ All components should report as healthy.
 
 Flux can notify external systems when reconciliations succeed or fail. The most visual option: GitHub commit status. Every commit in your repo gets a green tick or red cross based on whether Flux successfully applied it.
 
-First, create a secret with your GitHub token for the notification provider. On your **bastion node**:
+First, create a secret with your GitHub token for the notification provider. On your **bastion node**, use the token you saved in `notes.md` during Lab 0:
 
 ```bash
 kubectl create secret generic github-token \
@@ -58,9 +58,9 @@ kubectl create secret generic github-token \
   --from-literal=token=YOUR_GITHUB_TOKEN
 ```
 
-Use the same GitHub personal access token you created in Lab 0.
+Replace `YOUR_GITHUB_TOKEN` with the classic PAT you created in Lab 0 (check your `notes.md` if you forgot it).
 
-Now on your **local machine**, create `clusters/notifications.yaml`:
+Now on your **local machine**, create `clusters/notifications.yaml`. **Before you paste**, you need to replace `YOUR_USERNAME` in the Provider address with your actual GitHub username:
 
 ```yaml
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
@@ -90,8 +90,9 @@ spec:
       name: '*'
 ```
 
-!!! warning "Update the URL"
-    Replace `YOUR_USERNAME` in the Provider address with your GitHub username.
+!!! warning "Two things to replace before committing"
+    1. Replace `YOUR_GITHUB_TOKEN` in the kubectl command with your actual token
+    2. Replace `YOUR_USERNAME` in the Provider address with your GitHub username
 
 Commit and push:
 
