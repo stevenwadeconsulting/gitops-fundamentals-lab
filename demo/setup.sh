@@ -61,5 +61,4 @@ echo ""
 echo '1. "Analyse the Flux installation in my current cluster and report the status of all components."'
 echo '2. "List the Flux Kustomizations and draw a Mermaid diagram showing the depends-on relationships."'
 echo '3. "Perform a root cause analysis of the last failed Helm release in the production namespace."'
-echo '4. "Resume all suspended Flux resources and verify their status."'
-echo '5. "How do I configure health checks for a HelmRelease? Search the latest Flux docs."'
+echo '4. "How do I configure health checks for a HelmRelease? Search the latest Flux docs."'
