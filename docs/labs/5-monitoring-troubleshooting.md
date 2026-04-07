@@ -58,9 +58,9 @@ kubectl create secret generic github-token \
   --from-literal=token=YOUR_GITHUB_TOKEN
 ```
 
-Replace `YOUR_GITHUB_TOKEN` with the classic PAT you created in Lab 0 (check your `notes.md` if you forgot it).
+Replace `YOUR_GITHUB_TOKEN` with the classic PAT you created in Lab 0 (check your `notes.md` if you forgot it). You'll also need your GitHub username for the next step.
 
-Now on your **local machine**, create `clusters/notifications.yaml`. **Before you paste**, you need to replace `YOUR_USERNAME` in the Provider address with your actual GitHub username:
+Now on your **local machine**, create `clusters/notifications.yaml`, replacing `YOUR_USERNAME` with your GitHub username:
 
 ```yaml
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
