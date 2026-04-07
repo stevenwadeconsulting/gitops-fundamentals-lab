@@ -155,37 +155,37 @@ kubectl logs -n flux-system deploy/kustomize-controller --tail=20
 
 ## Task 4: Break something on purpose (and watch GitHub turn red)
 
-Now that notifications are set up, you'll see the commit status change in real time. On your **local machine**, introduce a deliberate error. Edit `apps/podinfo/overlays/dev/kustomization.yaml` and add an invalid patch:
+Now that notifications are set up, you'll see the commit status change in real time. On your **local machine**, break the HelmRelease by setting an invalid image tag. Edit `apps/podinfo-helm/production.yaml` and change the values:
 
 ```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: dev
-resources:
-  - namespace.yaml
-  - ../../base
-patches:
-  - target:
-      kind: Deployment
-      name: podinfo
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 1
-  - target:
-      kind: Deployment
-      name: this-does-not-exist
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 99
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: podinfo
+  namespace: production
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: podinfo
+      version: ">=6.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: podinfo
+        namespace: flux-system
+  values:
+    replicaCount: 3
+    image:
+      tag: "99.99.99"
+    ui:
+      message: "This will fail"
 ```
 
 Commit and push:
 
 ```bash
 git add -A
-git commit -m "Break dev overlay with invalid patch target"
+git commit -m "Break podinfo with invalid image tag"
 git push
 ```
 
@@ -193,52 +193,55 @@ git push
 
 ## Task 5: Diagnose the failure
 
-On your **bastion node**, watch the kustomization fail:
+On your **bastion node**, force a reconciliation and watch the HelmRelease fail:
 
 ```bash
-flux get kustomizations --watch
+flux reconcile kustomization apps-podinfo-helm
+flux get helmreleases -A --watch
 ```
 
-You should see `apps-dev` go to `Ready: False`. Now use the four-step pattern:
+You should see podinfo go to `Ready: False`. Now use the four-step pattern:
 
 **Step 1: What failed?**
 
 ```bash
-flux get kustomizations
+flux get helmreleases -A
 ```
 
-`apps-dev` shows `False`.
+podinfo shows `False`.
 
 **Step 2: What's the error?**
 
 ```bash
-kubectl describe kustomization apps-dev -n flux-system
+kubectl describe helmrelease podinfo -n production
 ```
 
-Look at the `Status` section. It will tell you about the invalid patch target.
+Look at the `Status` section. It will tell you about the failed Helm upgrade.
 
 **Step 3: What happened?**
 
 ```bash
-flux events --for kustomization/apps-dev
+flux events --for helmrelease/podinfo -n production
 ```
 
-You'll see the reconciliation failure event with the specific error.
+You'll see the upgrade failure event with the specific error.
 
 **Step 4: Why?**
 
 ```bash
-kubectl logs -n flux-system deploy/kustomize-controller --tail=20
+kubectl logs -n flux-system deploy/helm-controller --tail=20
 ```
 
-The controller logs show the full error. In production, this is where you'd find the root cause.
+The Helm controller logs show the full error: image `99.99.99` doesn't exist.
 
 !!! success "The pattern works"
     Four commands. Every time. Status, describe, events, logs. This is how you debug a Flux-managed cluster. No guessing. No "have you tried restarting it?"
 
+Check your repository on GitHub. The broken commit should have a red cross next to it.
+
 ---
 
-## Task 5: Fix it through Git
+## Task 6: Fix it through Git
 
 On your **local machine**, revert the broken commit:
 
@@ -247,13 +250,14 @@ git revert HEAD --no-edit
 git push
 ```
 
-On your **bastion node**, watch the fix apply:
+On your **bastion node**, force reconciliation and watch the fix:
 
 ```bash
-flux get kustomizations --watch
+flux reconcile kustomization apps-podinfo-helm
+flux get helmreleases -A --watch
 ```
 
-`apps-dev` should go back to `Ready: True`. You fixed a broken deployment without touching kubectl. The fix is in the Git history. The rollback is auditable.
+podinfo should go back to `Ready: True`. You fixed a broken deployment without touching kubectl or running `helm rollback`. The fix is in the Git history. The rollback is auditable.
 
 Check your repository on GitHub. The broken commit should have a red cross. The revert commit should have a green tick. Your team can see exactly which commits deployed successfully without leaving GitHub.
 
@@ -262,70 +266,71 @@ Check your repository on GitHub. The broken commit should have a red cross. The 
 
 ---
 
-## Task 6: Suspend and resume
+## Task 7: Suspend and resume
 
 Sometimes you need to pause Flux. Maintenance windows. Debugging. Manual testing.
 
-On your **bastion node**, suspend the dev kustomization:
+On your **bastion node**, suspend the podinfo HelmRelease:
 
 ```bash
-flux suspend kustomization apps-dev
+flux suspend helmrelease podinfo -n production
 ```
 
 Verify it's suspended:
 
 ```bash
-flux get kustomizations
+flux get helmreleases -A
 ```
 
-`apps-dev` should show `Suspended: True`.
+podinfo should show `Suspended: True`.
 
-Now make a change on your **local machine**. Edit `apps/podinfo/overlays/dev/kustomization.yaml` and change replicas to 5:
+Now make a change on your **local machine**. Edit `apps/podinfo-helm/production.yaml` and change the UI message:
 
 ```yaml
-patches:
-  - target:
-      kind: Deployment
-      name: podinfo
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 5
+  values:
+    ui:
+      message: "This change won't apply yet (Flux is suspended)"
 ```
 
 Commit and push:
 
 ```bash
 git add -A
-git commit -m "Scale dev to 5 replicas (Flux is suspended)"
+git commit -m "Update UI message (Flux is suspended)"
 git push
 ```
 
-On your **bastion node**, check dev pods:
+On your **bastion node**, force the kustomization to reconcile:
 
 ```bash
-kubectl get pods -n dev
+flux reconcile kustomization apps-podinfo-helm
 ```
 
-Still 1 replica. Flux is suspended. The change is in Git but not applied.
+Check the HelmRelease:
+
+```bash
+flux get helmreleases -A
+```
+
+Still the old revision. Flux applied the HelmRelease YAML but the HelmRelease itself is suspended, so Helm won't upgrade.
 
 Now resume:
 
 ```bash
-flux resume kustomization apps-dev
+flux resume helmrelease podinfo -n production
 ```
 
 Wait a moment, then check:
 
 ```bash
-kubectl get pods -n dev
+flux get helmreleases -A
 ```
 
-5 replicas. The change in Git was applied the moment Flux resumed. Suspend pauses reconciliation. Resume catches up.
+New revision. The change in Git was applied the moment Flux resumed. Suspend pauses reconciliation. Resume catches up.
 
 ---
 
-## Task 7: Force a reconciliation
+## Task 8: Force a reconciliation
 
 Sometimes you don't want to wait for the interval. On your **bastion node**:
 
