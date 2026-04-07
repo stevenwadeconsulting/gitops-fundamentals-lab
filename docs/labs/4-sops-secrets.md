@@ -131,6 +131,7 @@ Also replace the entire contents of `apps/podinfo-helm/kustomization.yaml` to in
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - namespace.yaml
   - production.yaml
   - secret.encrypted.yaml
 ```
