@@ -112,7 +112,7 @@ flux get alerts
 Now go to your repository on GitHub and look at your latest commit. You should see a green tick (or a pending/running status) next to it.
 
 !!! success "The notification controller in action"
-    From now on, every commit gets a status from Flux. Green means Flux applied it successfully. Red means something failed. Your team can see deployment status without leaving GitHub. No Slack bots. No dashboards. Just Git.
+    From now on, every successful reconciliation gets a green tick on the commit that triggered it. Your team can see which commits deployed successfully without leaving GitHub. No Slack bots. No dashboards. Just Git.
 
 ```mermaid
 graph LR
