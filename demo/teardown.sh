@@ -3,8 +3,10 @@ set -euo pipefail
 
 # ============================================================================
 # MCP Demo Teardown
-# Run this after the demo to clean up the broken HelmRelease
+# Run this from your LAPTOP after the demo to clean up
 # ============================================================================
+
+export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-workshop}"
 
 echo "=== Cleaning up MCP demo state ==="
 

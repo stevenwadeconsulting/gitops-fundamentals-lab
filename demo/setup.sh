@@ -3,9 +3,11 @@ set -euo pipefail
 
 # ============================================================================
 # MCP Demo Setup Script
-# Run this on participant-001's BASTION NODE before the demo segment (15:25)
+# Run this from your LAPTOP before the demo segment (15:25)
 # This creates the demo state: working apps + one intentionally broken release
 # ============================================================================
+
+export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-workshop}"
 
 echo "=== Setting up MCP demo state ==="
 
