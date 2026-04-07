@@ -153,39 +153,25 @@ kubectl logs -n flux-system deploy/kustomize-controller --tail=20
 
 ---
 
-## Task 4: Break something on purpose (and watch GitHub turn red)
+## Task 4: Break something on purpose
 
-Now that notifications are set up, you'll see the commit status change in real time. On your **local machine**, break the HelmRelease by setting an invalid image tag. Edit `apps/podinfo-helm/production.yaml` and change the values:
+On your **local machine**, break the Kustomization by referencing a file that doesn't exist. Edit `apps/podinfo-helm/kustomization.yaml`:
 
 ```yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: podinfo
-  namespace: production
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: podinfo
-      version: ">=6.0.0"
-      sourceRef:
-        kind: HelmRepository
-        name: podinfo
-        namespace: flux-system
-  values:
-    replicaCount: 3
-    image:
-      tag: "99.99.99"
-    ui:
-      message: "This will fail"
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - production.yaml
+  - secret.encrypted.yaml
+  - this-file-does-not-exist.yaml
 ```
 
 Commit and push:
 
 ```bash
 git add -A
-git commit -m "Break podinfo with invalid image tag"
+git commit -m "Break kustomization with missing file reference"
 git push
 ```
 
@@ -193,51 +179,51 @@ git push
 
 ## Task 5: Diagnose the failure
 
-On your **bastion node**, force a reconciliation and watch the HelmRelease fail:
+On your **bastion node**, force a reconciliation and watch it fail:
 
 ```bash
 flux reconcile kustomization apps-podinfo-helm
-flux get helmreleases -A --watch
+flux get kustomizations --watch
 ```
 
-You should see podinfo go to `Ready: False`. Now use the four-step pattern:
+You should see `apps-podinfo-helm` go to `Ready: False`. Check your repository on GitHub. The commit should have a red cross next to it from the notification controller.
+
+Now use the four-step pattern:
 
 **Step 1: What failed?**
 
 ```bash
-flux get helmreleases -A
+flux get kustomizations
 ```
 
-podinfo shows `False`.
+`apps-podinfo-helm` shows `False`.
 
 **Step 2: What's the error?**
 
 ```bash
-kubectl describe helmrelease podinfo -n production
+kubectl describe kustomization apps-podinfo-helm -n flux-system
 ```
 
-Look at the `Status` section. It will tell you about the failed Helm upgrade.
+Look at the `Status` section. It will tell you about the missing file.
 
 **Step 3: What happened?**
 
 ```bash
-flux events --for helmrelease/podinfo -n production
+flux events --for kustomization/apps-podinfo-helm
 ```
 
-You'll see the upgrade failure event with the specific error.
+You'll see the reconciliation failure event with the specific error.
 
 **Step 4: Why?**
 
 ```bash
-kubectl logs -n flux-system deploy/helm-controller --tail=20
+kubectl logs -n flux-system deploy/kustomize-controller --tail=20
 ```
 
-The Helm controller logs show the full error: image `99.99.99` doesn't exist.
+The controller logs show the full error: `this-file-does-not-exist.yaml` not found.
 
 !!! success "The pattern works"
     Four commands. Every time. Status, describe, events, logs. This is how you debug a Flux-managed cluster. No guessing. No "have you tried restarting it?"
-
-Check your repository on GitHub. The broken commit should have a red cross next to it.
 
 ---
 
@@ -254,10 +240,10 @@ On your **bastion node**, force reconciliation and watch the fix:
 
 ```bash
 flux reconcile kustomization apps-podinfo-helm
-flux get helmreleases -A --watch
+flux get kustomizations --watch
 ```
 
-podinfo should go back to `Ready: True`. You fixed a broken deployment without touching kubectl or running `helm rollback`. The fix is in the Git history. The rollback is auditable.
+`apps-podinfo-helm` should go back to `Ready: True`. You fixed a broken deployment without touching kubectl. The fix is in the Git history. The rollback is auditable.
 
 Check your repository on GitHub. The broken commit should have a red cross. The revert commit should have a green tick. Your team can see exactly which commits deployed successfully without leaving GitHub.
 
