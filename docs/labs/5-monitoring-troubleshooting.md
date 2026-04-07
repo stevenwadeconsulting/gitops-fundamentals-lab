@@ -316,7 +316,7 @@ New revision. The change in Git was applied the moment Flux resumed. Suspend pau
 Sometimes you don't want to wait for the interval. On your **bastion node**:
 
 ```bash
-flux reconcile kustomization apps-dev
+flux reconcile kustomization apps-podinfo-helm
 ```
 
 This triggers an immediate reconciliation, regardless of the interval timer. Useful after pushing a fix and wanting to see it applied now.
