@@ -32,8 +32,8 @@ If none of that helps, raise your hand.
 
 | Session | When | Where |
 |---------|------|-------|
-| [The Killer Question: How One Sentence Can Transform Your Engineering Career](https://events.pinetool.ai/3574/#sessions/112181){ target="_blank" } | Thursday 21 May, 11:05 EEST | Hall 1 |
-| [Panel: Humans Before Pipelines](https://events.pinetool.ai/3574/#sessions/115044){ target="_blank" } | Thursday 21 May, 15:05 EEST | Hall 5 |
+| [The Killer Question: How One Sentence Can Transform Your Engineering Career](https://events.pinetool.ai/3574/#sessions/112181?referrer%5Bpathname%5D=%2Fspeakers%2F1018504&referrer%5Bsearch%5D=%3Freferrer%255Bpathname%255D%3D%252Fspeakers%26referrer%255Bsearch%255D%3D%26referrer%255Btitle%255D%3DSpeakers&referrer%5Btitle%5D=Speaker){ target="_blank" } | Thursday 21 May, 11:05 EEST | Hall 1 |
+| [Panel: Humans Before Pipelines](https://events.pinetool.ai/3574/#sessions/115044?referrer%5Bpathname%5D=%2Fspeakers%2F1018504&referrer%5Bsearch%5D=%3Freferrer%255Bpathname%255D%3D%252Fspeakers%26referrer%255Bsearch%255D%3D%26referrer%255Btitle%255D%3DSpeakers&referrer%5Btitle%5D=Speaker){ target="_blank" } | Thursday 21 May, 15:05 EEST | Hall 5 |
 
 !!! tip "Thursday morning"
     The Killer Question talk covers the communication skills that help you get GitOps adopted at your organisation. Everything you learned today gives you the technical skills. Thursday gives you the words to sell it internally. Come ready to stand up.
