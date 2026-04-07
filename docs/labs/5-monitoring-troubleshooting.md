@@ -155,23 +155,20 @@ kubectl logs -n flux-system deploy/kustomize-controller --tail=20
 
 ## Task 4: Break something on purpose
 
-On your **local machine**, break the Kustomization by referencing a file that doesn't exist. Edit `apps/podinfo-helm/kustomization.yaml`:
+On your **local machine**, break the HelmRelease by setting an invalid chart version. Edit `apps/podinfo-helm/production.yaml` and change the chart version:
 
 ```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - namespace.yaml
-  - production.yaml
-  - secret.encrypted.yaml
-  - this-file-does-not-exist.yaml
+  chart:
+    spec:
+      chart: podinfo
+      version: "99.99.99"
 ```
 
 Commit and push:
 
 ```bash
 git add -A
-git commit -m "Break kustomization with missing file reference"
+git commit -m "Break podinfo with invalid chart version"
 git push
 ```
 
@@ -183,47 +180,45 @@ On your **bastion node**, force a reconciliation and watch it fail:
 
 ```bash
 flux reconcile kustomization apps-podinfo-helm
-flux get kustomizations --watch
+flux get helmreleases -A --watch
 ```
 
-You should see `apps-podinfo-helm` go to `Ready: False`. Check your repository on GitHub. The commit should have a red cross next to it from the notification controller.
-
-Now use the four-step pattern:
+You should see podinfo go to `Ready: False`. Now use the four-step pattern:
 
 **Step 1: What failed?**
 
 ```bash
-flux get kustomizations
+flux get helmreleases -A
 ```
 
-`apps-podinfo-helm` shows `False`.
+podinfo shows `False`.
 
 **Step 2: What's the error?**
 
 ```bash
-kubectl describe kustomization apps-podinfo-helm -n flux-system
+kubectl describe helmrelease podinfo -n production
 ```
 
-Look at the `Status` section. It will tell you about the missing file.
+Look at the `Status` section. It will tell you about the invalid chart version.
 
 **Step 3: What happened?**
 
 ```bash
-flux events --for kustomization/apps-podinfo-helm
+flux events --for helmrelease/podinfo -n production
 ```
 
-You'll see the reconciliation failure event with the specific error.
+You'll see the failure event with the specific error.
 
 **Step 4: Why?**
 
 ```bash
-kubectl logs -n flux-system deploy/kustomize-controller --tail=20
+kubectl logs -n flux-system deploy/helm-controller --tail=20
 ```
 
-The controller logs show the full error: `this-file-does-not-exist.yaml` not found.
+The Helm controller logs show the full error: no chart version matching `99.99.99`.
 
 !!! success "The pattern works"
-    Four commands. Every time. Status, describe, events, logs. This is how you debug a Flux-managed cluster. No guessing. No "have you tried restarting it?"
+    Four commands. Every time. Status, describe, events, logs. Works for Kustomizations, HelmReleases, GitRepositories, any Flux resource. This is how you debug a Flux-managed cluster.
 
 ---
 
@@ -240,12 +235,12 @@ On your **bastion node**, force reconciliation and watch the fix:
 
 ```bash
 flux reconcile kustomization apps-podinfo-helm
-flux get kustomizations --watch
+flux get helmreleases -A --watch
 ```
 
-`apps-podinfo-helm` should go back to `Ready: True`. You fixed a broken deployment without touching kubectl. The fix is in the Git history. The rollback is auditable.
+podinfo should go back to `Ready: True`. You fixed a broken deployment without touching kubectl or running `helm rollback`. The fix is in the Git history. The rollback is auditable.
 
-Check your repository on GitHub. The broken commit should have a red cross. The revert commit should have a green tick. Your team can see exactly which commits deployed successfully without leaving GitHub.
+Check your repository on GitHub. The revert commit should have a green tick from the notification controller. Your team can see which commits deployed successfully without leaving GitHub.
 
 !!! warning "Never use kubectl rollout undo"
     In a GitOps workflow, `kubectl rollout undo` gets immediately overwritten by Flux. The reconciliation loop re-applies the state from Git. If you undo in the cluster but don't fix Git, the broken state comes back. Always fix through Git.
