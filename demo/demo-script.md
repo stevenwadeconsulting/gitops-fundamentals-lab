@@ -14,6 +14,10 @@ If you haven't already set up MCP on your laptop, run the setup script:
 bash demo/setup.sh <BASTION_IP>
 ```
 
+```
+SSH_KEY=~/Desktop/id_rsa ./demo/setup.sh 164.92.142.29
+```
+
 This copies the kubeconfig, tests the connection, and prints the Claude Desktop config you need.
 
 If MCP is already configured from earlier testing:
